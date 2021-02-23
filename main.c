@@ -1,4 +1,4 @@
-#include "snapshot.h"
+#include "include/snapshot.h"
 
 #include "libavcodec/avcodec.h"
 

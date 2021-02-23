@@ -1,4 +1,4 @@
-#include "path.h"
+#include "../include/path.h"
 
 #include "libavutil/adler32.h"
 #include "libpng/png.h"
@@ -7,7 +7,7 @@
 #ifndef STB_IMAGE_WRITE_IMPLEMENTATION
 #define STB_IMAGE_WRITE_IMPLEMENTATION
 
-#include "stb/stb_image_write.h"
+#include "../stb/stb_image_write.h"
 
 #endif //STB_IMAGE_WRITE_IMPLEMENTATION
 

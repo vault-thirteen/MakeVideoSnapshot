@@ -1,4 +1,4 @@
-#include "image.h"
+#include "../include/image.h"
 
 #include "libavformat/avformat.h"
 #include "libavutil/imgutils.h"
