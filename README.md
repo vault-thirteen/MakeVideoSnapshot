@@ -1,0 +1,2 @@
+# MakeVideoSnapshot
+Video Snapshot Maker
