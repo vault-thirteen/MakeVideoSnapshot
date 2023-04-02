@@ -1,8 +1,9 @@
-#include "../include/image.h"
+#include "image.h"
 
 #include "libavformat/avformat.h"
 #include "libavutil/imgutils.h"
 #include "libswscale/swscale.h"
+#include "libavcodec/avcodec.h"
 
 
 // Decodes the best Video Steam from the File,

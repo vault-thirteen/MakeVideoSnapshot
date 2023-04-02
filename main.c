@@ -1,6 +1,7 @@
-#include "include/snapshot.h"
+#include "snapshot.h"
 
 #include "libavcodec/avcodec.h"
+#include "libavutil/log.h"
 
 
 int main(int argc, char **argv) {

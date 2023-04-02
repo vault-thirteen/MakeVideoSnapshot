@@ -1,13 +1,14 @@
-#include "../include/path.h"
+#include <stdio.h>
+#include "path.h"
 
 #include "libavutil/adler32.h"
 #include "libpng/png.h"
-#include "jpeglib.h"
+#include "libjpeg/jpeglib.h"
 
 #ifndef STB_IMAGE_WRITE_IMPLEMENTATION
 #define STB_IMAGE_WRITE_IMPLEMENTATION
 
-#include "../stb/stb_image_write.h"
+#include "stb/stb_image_write.h"
 
 #endif //STB_IMAGE_WRITE_IMPLEMENTATION
 
@@ -15,7 +16,7 @@
 // Writes an Image to the Disk using the PNG Format.
 // Returns Zero on Success.
 // This Library is bugged and does not work.
-int writePngImageWithLibpng(char *filename, int width, int height, uint8_t *buffer, char *title) {
+int writePngImageWithLibpng(char *filename, int width, int height, const uint8_t *buffer, const char *title) {
     int code = 0;
     FILE *fp = NULL;
     png_structp png_ptr = NULL;
