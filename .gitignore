@@ -6,3 +6,5 @@ stb
 .vs
 out
 _BUILD_
+cmake-build-debug-visual-studio
+cmake-build-release-visual-studio
