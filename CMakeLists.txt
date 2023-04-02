@@ -3,7 +3,6 @@ project(MakeVideoSnapshot VERSION 1.0.0 DESCRIPTION "Video Snapshot Maker" LANGU
 set_target_properties(PROPERTIES VERSION ${PROJECT_VERSION})
 set(CMAKE_C_STANDARD 23)
 
-#add_subdirectory("ffmpeg")
 add_executable(${PROJECT_NAME} main.c image.c path.c snapshot.c)
 
 add_library(avcodec SHARED IMPORTED)
@@ -22,12 +21,9 @@ add_library(swscale SHARED IMPORTED)
 set_target_properties(swscale PROPERTIES IMPORTED_IMPLIB "${CMAKE_SOURCE_DIR}/ffmpeg/lib/swscale.lib")
 set_target_properties(swscale PROPERTIES IMPORTED_LOCATION "${CMAKE_SOURCE_DIR}/ffmpeg/bin/swscale-7.dll")
 
-target_include_directories(${PROJECT_NAME} PUBLIC "${CMAKE_SOURCE_DIR}/ffmpeg/include")
-
 add_library(libpng SHARED IMPORTED)
 set_target_properties(libpng PROPERTIES IMPORTED_IMPLIB "${CMAKE_SOURCE_DIR}/libpng/lib/libpng16.lib")
 set_target_properties(libpng PROPERTIES IMPORTED_LOCATION "${CMAKE_SOURCE_DIR}/libpng/bin/libpng16.dll")
-target_include_directories(${PROJECT_NAME} PUBLIC "${CMAKE_SOURCE_DIR}/libpng/include")
 
 add_library(libjpeg OBJECT IMPORTED)
 set_target_properties(libjpeg PROPERTIES IMPORTED_IMPLIB "${CMAKE_SOURCE_DIR}/libjpeg/jpeg.lib")
@@ -79,6 +75,8 @@ set_property(TARGET libjpeg PROPERTY IMPORTED_OBJECTS
         "${CMAKE_SOURCE_DIR}/libjpeg/x64/jquant2.obj"
         "${CMAKE_SOURCE_DIR}/libjpeg/x64/jutils.obj")
 
+target_include_directories(${PROJECT_NAME} PUBLIC "${CMAKE_SOURCE_DIR}/ffmpeg/include")
+target_include_directories(${PROJECT_NAME} PUBLIC "${CMAKE_SOURCE_DIR}/libpng/include")
 target_include_directories(${PROJECT_NAME} PUBLIC "${CMAKE_SOURCE_DIR}/libjpeg/x64/include")
 
 target_link_libraries(${PROJECT_NAME} avcodec avformat avutil swscale libpng libjpeg)
