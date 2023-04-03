@@ -28,7 +28,7 @@ video stream of the file.
     * AVFormat,
     * AVUtil,
     * SWScale. 
-  * They are located in the `ffmpeg` folder.
+  * They should be located in the `ffmpeg` folder.
 
 
 * Get the `sdb` library.
