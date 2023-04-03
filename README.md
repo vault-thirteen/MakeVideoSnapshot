@@ -18,27 +18,32 @@ video stream of the file.
     * CMake support is already built into CLion.
 
 
-* Get the latest shared library of the `FFmpeg` project.
+* Get the latest stable shared library of the `FFmpeg` project.
   * https://ffmpeg.org/download.html
 
 
 * Update all FFmpeg-related files from the downloaded FFmpeg build.
+  * DLL libraries, H (header) files and LIB files for:
+    * AVCodec,
+    * AVFormat,
+    * AVUtil,
+    * SWScale. 
   * They are located in the `ffmpeg` folder.
 
 
 * Get the `sdb` library.
   * https://github.com/nothings/stb 
-  * Use the provided `get-stb.bat` script.
+  * Or use the provided `get-stb.bat` script.
 
 
 * Get the `libpng` library.
   * http://www.libpng.org/pub/png/libpng.html
-  * Use the provided `get-libpng.bat` script.
+  * Or use the provided `get-libpng.bat` script.
 
 
 * Get the `libjpeg` library.
   * https://ijg.org/
-  * Use the provided `get-libjpeg.bat` script.
+  * Or use the provided `get-libjpeg.bat` script.
 
 
 * Build the project using Visual Studio directly or via CLion.  
