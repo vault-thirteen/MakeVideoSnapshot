@@ -53,6 +53,7 @@ video stream of the file.
 ### Building in Visual Studio
 
 * Open CMake GUI, set folders, configure & generate files for Visual Studio.
+* Install the CMake feature for Visual Studio. 
 * Open the created solution in Visual Studio and build it.
 
 ### Building in CLion
