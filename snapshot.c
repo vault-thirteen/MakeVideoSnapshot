@@ -14,7 +14,7 @@ const char *make_video_snapshot(
         const char *input_filename,
         const char *output_folder_path) {
 
-    AVCodec *codec = NULL;
+    const AVCodec *codec = NULL;
     AVCodecContext *ctx = NULL;
     AVCodecParameters *origin_par = NULL;
     AVFrame *fr = NULL;
