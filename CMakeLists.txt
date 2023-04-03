@@ -3,7 +3,7 @@ project(MakeVideoSnapshot VERSION 1.0.0 DESCRIPTION "Video Snapshot Maker" LANGU
 set_target_properties(PROPERTIES VERSION ${PROJECT_VERSION})
 set(CMAKE_C_STANDARD 23)
 
-add_executable(${PROJECT_NAME} main.c image.c path.c snapshot.c)
+add_executable(${PROJECT_NAME} main.c image.c snapshot.c)
 
 add_library(avcodec SHARED IMPORTED)
 set_target_properties(avcodec PROPERTIES IMPORTED_IMPLIB "${CMAKE_SOURCE_DIR}/ffmpeg/lib/avcodec.lib")
