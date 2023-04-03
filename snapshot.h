@@ -42,17 +42,17 @@ int make_video_snapshots(const char *infp,
  */
 int decode_and_process_frames(const char *outfdp,
                               int *fn,
+                              uint8_t *buf,
+                              int buf_size,
                               AVFormatContext *fmt_ctx,
-                              AVPacket *pkt,
                               int stream,
                               AVCodecContext *ctx,
-                              uint8_t *byte_buffer,
-                              int byte_buffer_size,
-                              AVFrame *fr,
-                              struct SwsContext *conversion_ctx,
+                              struct SwsContext *conv_ctx,
                               uint8_t *const rgb_dst[1],
                               const int rgb_dstStride[1],
-                              uint8_t *rgb_byte_buffer);
+                              uint8_t *rgb_buf,
+                              AVPacket *pkt,
+                              AVFrame *fr);
 
 /*
  * Receive available decoded frames from the decoder, save them to disk.
@@ -64,12 +64,12 @@ int decode_and_process_frames(const char *outfdp,
  */
 int process_decoded_frames(AVCodecContext *ctx,
                            AVFrame *fr,
-                           uint8_t *byte_buffer,
-                           int byte_buffer_size,
-                           struct SwsContext *conversion_ctx,
+                           uint8_t *buf,
+                           int buf_size,
+                           struct SwsContext *conv_ctx,
                            uint8_t *const rgb_dst[1],
                            const int rgb_dstStride[1],
-                           uint8_t *rgb_byte_buffer,
+                           uint8_t *rgb_buf,
                            const char *outfdp,
                            int *fn);
 

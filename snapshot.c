@@ -19,7 +19,6 @@
 int make_video_snapshots(const char *infp,
                          const char *outfdp,
                          int *fn) {
-    enum AVPixelFormat dstPixelFormat = AV_PIX_FMT_RGB24;
     AVFormatContext *fmt_ctx = NULL;
     int err = avformat_open_input(&fmt_ctx, infp, NULL, NULL); // [!] The stream must be closed with avformat_close_input().
     if (err < 0) {
@@ -86,69 +85,45 @@ int make_video_snapshots(const char *infp,
         return err;
     }
 
-    AVFrame *fr = av_frame_alloc(); // [!] The resulting struct must be freed using av_frame_free().
-    if (fr == NULL) {
-        av_log(NULL, AV_LOG_ERROR, "Can not allocate frame, file: %s.\n", infp);
-        avcodec_free_context(&ctx);
-        avformat_close_input(&fmt_ctx);
-        return err;
-    }
-
-    AVPacket *pkt = av_packet_alloc(); // [!] The resulting struct must be freed using av_packet_free().
-    if (pkt == NULL) {
-        av_log(NULL, AV_LOG_ERROR, "Can not allocate packet, file: %s.\n", infp);
-        av_frame_free(&fr);
-        avcodec_free_context(&ctx);
-        avformat_close_input(&fmt_ctx);
-        return ERR_PACKET;
-    }
-
-    int byte_buffer_size = av_image_get_buffer_size(ctx->pix_fmt, ctx->width, ctx->height, 32);
-    if (byte_buffer_size < 0) {
+    int buf_size = av_image_get_buffer_size(ctx->pix_fmt, ctx->width, ctx->height, 32);
+    if (buf_size < 0) {
         av_log(NULL, AV_LOG_ERROR, "Can not get buffer size, file: %s.\n", infp);
-        av_packet_free(&pkt);
-        av_frame_free(&fr);
         avcodec_free_context(&ctx);
         avformat_close_input(&fmt_ctx);
         return ERR_BUFFER_SIZE;
     }
 
-    uint8_t *byte_buffer = av_malloc(byte_buffer_size); // [!] -> av_free.
-    if (byte_buffer == NULL) {
+    uint8_t *buf = av_malloc(buf_size); // [!] -> av_free.
+    if (buf == NULL) {
         av_log(NULL, AV_LOG_ERROR, "Can not allocate buffer, file: %s.\n", infp);
-        av_packet_free(&pkt);
-        av_frame_free(&fr);
         avcodec_free_context(&ctx);
         avformat_close_input(&fmt_ctx);
         return ERR_BUFFER;
     }
 
-    int rgb_byte_buffer_size = av_image_get_buffer_size(dstPixelFormat, ctx->width, ctx->height, 32);
-    if (rgb_byte_buffer_size < 0) {
+    enum AVPixelFormat dstPixelFormat = AV_PIX_FMT_RGB24;
+    int rgb_buf_size = av_image_get_buffer_size(dstPixelFormat, ctx->width, ctx->height, 32);
+    if (rgb_buf_size < 0) {
         av_log(NULL, AV_LOG_ERROR, "Can not get image buffer size, file: %s.\n", infp);
-        av_freep(byte_buffer);
-        av_packet_free(&pkt);
-        av_frame_free(&fr);
+        av_free(buf);
         avcodec_free_context(&ctx);
         avformat_close_input(&fmt_ctx);
         return ERR_RGB_BUFFER_SIZE;
     }
 
-    uint8_t *rgb_byte_buffer = av_malloc(rgb_byte_buffer_size); // [!] -> av_free.
-    if (rgb_byte_buffer == NULL) {
+    uint8_t *rgb_buf = av_malloc(rgb_buf_size); // [!] -> av_free.
+    if (rgb_buf == NULL) {
         av_log(NULL, AV_LOG_ERROR, "Can not allocate RGB buffer, file: %s.\n", infp);
-        av_freep(byte_buffer);
-        av_packet_free(&pkt);
-        av_frame_free(&fr);
+        av_free(buf);
         avcodec_free_context(&ctx);
         avformat_close_input(&fmt_ctx);
         return ERR_RGB_BUFFER;
     }
 
-    uint8_t *const rgb_dst[1] = {rgb_byte_buffer};
+    uint8_t *const rgb_dst[1] = {rgb_buf};
     const int rgb_dstStride[1] = {ctx->width * 3};
 
-    struct SwsContext *conversion_ctx = sws_getContext(
+    struct SwsContext *conv_ctx = sws_getContext(
             ctx->width,
             ctx->height,
             ctx->pix_fmt,
@@ -159,12 +134,10 @@ int make_video_snapshots(const char *infp,
             NULL,
             NULL,
             NULL);
-    if (conversion_ctx == NULL) {
+    if (conv_ctx == NULL) {
         av_log(NULL, AV_LOG_ERROR, "Can not create conversion context, file: %s.\n", infp);
-        av_freep(rgb_byte_buffer);
-        av_freep(byte_buffer);
-        av_packet_free(&pkt);
-        av_frame_free(&fr);
+        av_free(rgb_buf);
+        av_free(buf);
         avcodec_free_context(&ctx);
         avformat_close_input(&fmt_ctx);
         return ERR_SWS_CONTEXT;
@@ -172,21 +145,41 @@ int make_video_snapshots(const char *infp,
 
 //    printf("#tb %d: %d/%d\n", stream, fmt_ctx->streams[stream]->time_base.num, fmt_ctx->streams[stream]->time_base.den);
 
-    err = decode_and_process_frames(outfdp, fn, fmt_ctx, pkt, stream, ctx, byte_buffer, byte_buffer_size, fr, conversion_ctx, rgb_dst, rgb_dstStride, rgb_byte_buffer);
-    if (err < 0) {
-        av_freep(rgb_byte_buffer);
-        av_freep(byte_buffer);
+    AVPacket *pkt = av_packet_alloc(); // [!] The resulting struct must be freed using av_packet_free().
+    if (pkt == NULL) {
+        av_free(rgb_buf);
+        av_free(buf);
+        avcodec_free_context(&ctx);
+        avformat_close_input(&fmt_ctx);
+        return ERR_PACKET;
+    }
+
+    AVFrame *fr = av_frame_alloc(); // [!] The resulting struct must be freed using av_frame_free().
+    if (fr == NULL) {
+        av_log(NULL, AV_LOG_ERROR, "Can not allocate frame, file: %s.\n", infp);
         av_packet_free(&pkt);
-        av_frame_free(&fr);
+        av_free(rgb_buf);
+        av_free(buf);
         avcodec_free_context(&ctx);
         avformat_close_input(&fmt_ctx);
         return err;
     }
 
-    av_freep(rgb_byte_buffer);
-    av_freep(byte_buffer);
-    av_packet_free(&pkt);
+    err = decode_and_process_frames(outfdp, fn, buf, buf_size, fmt_ctx, stream, ctx, conv_ctx, rgb_dst, rgb_dstStride, rgb_buf, pkt, fr);
+    if (err < 0) {
+        av_frame_free(&fr);
+        av_packet_free(&pkt);
+        av_free(rgb_buf);
+        av_free(buf);
+        avcodec_free_context(&ctx);
+        avformat_close_input(&fmt_ctx);
+        return err;
+    }
+
     av_frame_free(&fr);
+    av_packet_free(&pkt);
+    av_free(rgb_buf);
+    av_free(buf);
     avcodec_free_context(&ctx);
     avformat_close_input(&fmt_ctx);
     return 0;
@@ -205,20 +198,21 @@ int make_video_snapshots(const char *infp,
  */
 int decode_and_process_frames(const char *outfdp,
                               int *fn,
+                              uint8_t *buf,
+                              int buf_size,
                               AVFormatContext *fmt_ctx,
-                              AVPacket *pkt,
                               int stream,
                               AVCodecContext *ctx,
-                              uint8_t *byte_buffer,
-                              int byte_buffer_size,
-                              AVFrame *fr,
-                              struct SwsContext *conversion_ctx,
+                              struct SwsContext *conv_ctx,
                               uint8_t *const rgb_dst[1],
                               const int rgb_dstStride[1],
-                              uint8_t *rgb_byte_buffer) {
+                              uint8_t *rgb_buf,
+                              AVPacket *pkt,
+                              AVFrame *fr) {
     // Read frames and process them.
     int err = 0;
     while (1) {
+        //if (*fn > 5) { break; }//TODO:DEBUG.
         // Read a frame.
         err = av_read_frame(fmt_ctx, pkt); // [!] The packet must be freed with av_packet_unref() when it is no longer needed.
         if (err < 0) {
@@ -241,7 +235,7 @@ int decode_and_process_frames(const char *outfdp,
         if (err < 0) {
             if (err == AVERROR(EAGAIN)) {
                 // Receive and process decoded frames.
-                err = process_decoded_frames(ctx, fr, byte_buffer, byte_buffer_size, conversion_ctx, rgb_dst, rgb_dstStride, rgb_byte_buffer, outfdp, fn);
+                err = process_decoded_frames(ctx, fr, buf, buf_size, conv_ctx, rgb_dst, rgb_dstStride, rgb_buf, outfdp, fn);
                 if (err < 0) {
                     if (err != AVERROR(EAGAIN)) {
                         av_log(NULL, AV_LOG_ERROR, "Can not process decoded frames, frame number: %d.\n", *fn);
@@ -260,7 +254,7 @@ int decode_and_process_frames(const char *outfdp,
         }
 
         // Receive and process decoded frames.
-        err = process_decoded_frames(ctx, fr, byte_buffer, byte_buffer_size, conversion_ctx, rgb_dst, rgb_dstStride, rgb_byte_buffer, outfdp, fn);
+        err = process_decoded_frames(ctx, fr, buf, buf_size, conv_ctx, rgb_dst, rgb_dstStride, rgb_buf, outfdp, fn);
         if (err < 0) {
             if (err == AVERROR(EAGAIN)) {
                 // no av_packet_unref() here because we need additional data.
@@ -281,7 +275,7 @@ int decode_and_process_frames(const char *outfdp,
             return err;
         }
 
-        err = process_decoded_frames(ctx, fr, byte_buffer, byte_buffer_size, conversion_ctx, rgb_dst, rgb_dstStride, rgb_byte_buffer, outfdp, fn);
+        err = process_decoded_frames(ctx, fr, buf, buf_size, conv_ctx, rgb_dst, rgb_dstStride, rgb_buf, outfdp, fn);
         if (err < 0) {
             if (err == AVERROR_EOF) {
                 break;
@@ -290,7 +284,7 @@ int decode_and_process_frames(const char *outfdp,
         }
     }
 
-    //avcodec_flush_buffers(ctx);
+    avcodec_flush_buffers(ctx);
     return 0;
 }
 
@@ -304,12 +298,12 @@ int decode_and_process_frames(const char *outfdp,
  */
 int process_decoded_frames(AVCodecContext *ctx,
                            AVFrame *fr,
-                           uint8_t *byte_buffer,
-                           int byte_buffer_size,
-                           struct SwsContext *conversion_ctx,
+                           uint8_t *buf,
+                           int buf_size,
+                           struct SwsContext *conv_ctx,
                            uint8_t *const rgb_dst[1],
                            const int rgb_dstStride[1],
-                           uint8_t *rgb_byte_buffer,
+                           uint8_t *rgb_buf,
                            const char *outfdp,
                            int *fn) {
     while (1) {
@@ -319,8 +313,8 @@ int process_decoded_frames(AVCodecContext *ctx,
         }
 
         int cwb = av_image_copy_to_buffer( // Count of written bytes.
-                byte_buffer,
-                byte_buffer_size,
+                buf,
+                buf_size,
                 (const uint8_t *const *) fr->data,
                 (const int *) fr->linesize,
                 ctx->pix_fmt,
@@ -332,16 +326,17 @@ int process_decoded_frames(AVCodecContext *ctx,
             av_frame_unref(fr);
             return cwb;
         }
+
 //            printf("%d, %s, %s, %8"PRId64", %8d, 0x%08lx, %dx%d\n", stream,
 //                   av_ts2str(fr->pts), av_ts2str(fr->pkt_dts), fr->pkt_duration,
 //                   cwb,
-//                   av_adler32_update(0, (const uint8_t *) byte_buffer, cwb),
+//                   av_adler32_update(0, (const uint8_t *) buf, cwb),
 //                   fr->width, fr->height);
 
 
         // Convert the colour space (YUV -> RGB).
         int h = sws_scale(
-                conversion_ctx,
+                conv_ctx,
                 (const uint8_t *const *) fr->data,
                 (const int *) fr->linesize,
                 0,
@@ -354,7 +349,7 @@ int process_decoded_frames(AVCodecContext *ctx,
             return ERR_SWS_SCALE;
         }
 
-        const char *outfp = write_image(outfdp, *fn, ctx->width, ctx->height, rgb_byte_buffer); // Output file path.
+        const char *outfp = write_image(outfdp, *fn, ctx->width, ctx->height, rgb_buf); // Output file path.
         if (outfp == NULL) {
             av_log(NULL, AV_LOG_ERROR, "Error writing image file, frame number: %d.\n", *fn);
             av_frame_unref(fr);
