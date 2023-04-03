@@ -47,8 +47,8 @@ video stream of the file.
 
 
 * Build the project using Visual Studio directly or via CLion.  
-  Why ? There are many reasons.  
-  The first one is because MinGW is not able to read object files (`.obj`) properly.
+  Why ? There are many reasons. The first one is because MinGW is not able to  
+  properly read object files (`.obj`) built for Microsoft Windows systems.
 
 ### Building in Visual Studio
 
