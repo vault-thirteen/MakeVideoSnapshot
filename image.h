@@ -3,23 +3,32 @@
 
 #include "libavutil/timestamp.h"
 
-// getFilePath composes a target file path.
-const char *getFilePath(const char *folderName, int frameNumber, const char *fileExtFull);
 
-// write_image writes an image to the disk.
-// Returns the target file path on success.
-const char *write_image(const char *output_folder_path, int fn, int width, int height, uint8_t *buffer);
+// writePngImageWithLibpng writes an image to disk in PNG format using the
+// 'libpng' library. Returns zero on success.
+int writePngImageWithLibpng(char *fname, int w, int h, uint8_t *buf, char *title);
 
-// writePngImageWithLibpng writes an image to the disk using the PNG format.
-// Returns zero on success. This library is bugged and does not work.
-int writeJpegImage(char *filename, int width, int height, uint8_t *buffer);
+// writeJpegImage writes an image to disk in JPEG format using the 'libjpeg'
+// library. Returns zero on success.
+int writeJpegImage(char *fname, int w, int h, uint8_t *buf);
 
-// writeJpegImage writes an image to the disk using the JPEG format.
-// Returns zero on success.
-int writePngImageWithLibpng(char *filename, int width, int height, uint8_t *buffer, char *title);
+// writePngImageWithStb writes an image to disk in PNG format using the 'stb'
+// library. Returns zero on failure. Does not support compression.
+int writePngImageWithStb(char *fname, int w, int h, uint8_t *buf);
 
-// writePngImageWithStb writes an image to the disk using the PNG format.
-// Returns zero on failure. Does not support compression.
-int writePngImageWithStb(char *filename, int width, int height, uint8_t *buffer);
+/*
+ * Write the image to disk.
+ *
+ * @param outfdp    output folder path
+ * @param fn        current frame number
+ * @param w         width of the image
+ * @param h         height of the image
+ * @param buf       RGB image data taken from FFmpeg
+ * @param writer    file writer type
+ *
+ * @return          negative error code in case of failure, otherwise >= 0.
+ */
+int write_image(const char *outfdp, int fn, int w, int h, uint8_t *buf, char *writer);
+
 
 #endif //INC_SnapshotMaker_IMAGE_H

@@ -24,12 +24,14 @@
  *
  * @param infp      input file path
  * @param outfdp    output folder path
+ * @param writer    file writer type
  * @param fn        number of processed frames
  *
  * @return          negative error code in case of failure, otherwise >= 0.
  */
 int make_video_snapshots(const char *infp,
                          const char *outfp,
+                         char *writer,
                          int *fn);
 
 /*
@@ -37,6 +39,7 @@ int make_video_snapshots(const char *infp,
  *
  * @param outfp     output file path
  * @param fn        number of processed frames
+ * @param writer    file writer type
  *
  * @return          negative error code in case of failure, otherwise >= 0.
  */
@@ -52,13 +55,15 @@ int decode_and_process_frames(const char *outfdp,
                               const int rgb_dstStride[1],
                               uint8_t *rgb_buf,
                               AVPacket *pkt,
-                              AVFrame *fr);
+                              AVFrame *fr,
+                              char *writer);
 
 /*
  * Receive available decoded frames from the decoder, save them to disk.
  *
  * @param outfdp    output folder path
  * @param fn        current frame number
+ * @param writer    file writer type
  *
  * @return          negative error code in case of failure, otherwise >= 0.
  */
@@ -71,6 +76,7 @@ int process_decoded_frames(AVCodecContext *ctx,
                            const int rgb_dstStride[1],
                            uint8_t *rgb_buf,
                            const char *outfdp,
-                           int *fn);
+                           int *fn,
+                           char *writer);
 
 #endif //INC_SnapshotMaker_SNAPSHOT_H

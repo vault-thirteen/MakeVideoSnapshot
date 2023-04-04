@@ -11,24 +11,11 @@
 
 #endif //STB_IMAGE_WRITE_IMPLEMENTATION
 
-// getFilePath composes a target file path.
-const char *getFilePath(const char *folderName, int frameNumber, const char *fileExtFull) {
-    const char pathSeparator = '\\';
 
-    // While the 'itoa' function is absent in ANSI C, we are inventing a wheel.
-    char frameNumberStr[12];
-    sprintf(frameNumberStr, "%d", frameNumber);
-
-    size_t filePathLen = strlen(folderName) + 1 + strlen(frameNumberStr) + strlen(fileExtFull);
-    char *filePathName = calloc(filePathLen + 1, sizeof(char)); // With NULL terminator at the end.
-
-    sprintf(filePathName, "%s%c%s%s", folderName, pathSeparator, frameNumberStr, fileExtFull);
-    return filePathName;
-}
-
-// writePngImageWithLibpng writes an image to the disk using the PNG format.
-// Returns zero on success. This library is bugged and does not work.
-int writePngImageWithLibpng(char *filename, int width, int height, const uint8_t *buffer, char *title) {
+// writePngImageWithLibpng writes an image to disk in PNG format using the
+// 'libpng' library. Returns zero on success.
+int writePngImageWithLibpng(char *fname, int w, int h, const uint8_t *buf, char *title) {
+    //TODO
     int code = 0;
     png_structp png_ptr = NULL;
     png_infop info_ptr = NULL;
@@ -36,9 +23,9 @@ int writePngImageWithLibpng(char *filename, int width, int height, const uint8_t
 
     // Open file for writing (binary mode)
     FILE *fp = NULL;
-    errno_t err = fopen_s(&fp, filename, "wb");
+    errno_t err = fopen_s(&fp, fname, "wb");
     if (err != 0) {
-        fprintf(stderr, "Could not open file %s for writing\n", filename);
+        fprintf(stderr, "Could not open file %s for writing\n", fname);
         code = 1;
         goto finalize;
     }
@@ -69,7 +56,7 @@ int writePngImageWithLibpng(char *filename, int width, int height, const uint8_t
     png_init_io(png_ptr, fp);
 
     // Write header (8-bit colour depth)
-    png_set_IHDR(png_ptr, info_ptr, width, height,
+    png_set_IHDR(png_ptr, info_ptr, w, h,
                  8, PNG_COLOR_TYPE_RGB, PNG_INTERLACE_NONE,
                  PNG_COMPRESSION_TYPE_BASE, PNG_FILTER_TYPE_BASE);
 
@@ -90,21 +77,21 @@ int writePngImageWithLibpng(char *filename, int width, int height, const uint8_t
     png_write_info(png_ptr, info_ptr);
 
     // Allocate memory for one row (3 bytes per pixel - RGB)
-    row = (png_bytep) malloc(3 * width * sizeof(png_byte));
+    row = (png_bytep) malloc(3 * w * sizeof(png_byte));
 
     // Write image data
     int x, y, i, j;
-    for (y = 0; y < height; y++) {
-        for (x = 0; x < width; x++) {
+    for (y = 0; y < h; y++) {
+        for (x = 0; x < w; x++) {
             i = x * 3;
-            j = (y * width) + i;
-            row[i] = buffer[j]; // Red.
+            j = (y * w) + i;
+            row[i] = buf[j]; // Red.
             i++;
             j++;
-            row[i] = buffer[j]; // Green.
+            row[i] = buf[j]; // Green.
             i++;
             j++;
-            row[i] = buffer[j]; // Blue.
+            row[i] = buf[j]; // Blue.
         }
         png_write_row(png_ptr, row);
     }
@@ -121,37 +108,38 @@ int writePngImageWithLibpng(char *filename, int width, int height, const uint8_t
     return code;
 }
 
-// writeJpegImage writes an image to the disk using the JPEG format.
-// Returns zero on success.
-int writeJpegImage(char *filename, int width, int height, uint8_t *buffer) {
+// writeJpegImage writes an image to disk in JPEG format using the 'libjpeg'
+// library. Returns zero on success.
+int writeJpegImage(char *fname, int w, int h, uint8_t *buf) {
+    //TODO
     int quality = 100;
     struct jpeg_compress_struct cinfo;
     struct jpeg_error_mgr jerr;
     FILE *outfile;              /* target file */
     JSAMPROW row_pointer[1];    /* pointer to JSAMPLE row[s] */
-    int row_stride;             /* physical row width in image buffer */
+    int row_stride;             /* physical row w in image buf */
 
     cinfo.err = jpeg_std_error(&jerr);
     jpeg_create_compress(&cinfo);
 
-    errno_t err = fopen_s(&outfile, filename, "wb");
+    errno_t err = fopen_s(&outfile, fname, "wb");
     if (err != 0) {
-        fprintf(stderr, "can't open %s\n", filename);
+        fprintf(stderr, "can't open %s\n", fname);
         return -1;
     }
     jpeg_stdio_dest(&cinfo, outfile);
 
-    cinfo.image_width = width;          /* image width and height, in pixels */
-    cinfo.image_height = height;
+    cinfo.image_width = w;          /* image w and h, in pixels */
+    cinfo.image_height = h;
     cinfo.input_components = 3;        /* # of color components per pixel */
     cinfo.in_color_space = JCS_RGB;    /* colorspace of input image */
     jpeg_set_defaults(&cinfo);
     jpeg_set_quality(&cinfo, quality, TRUE /* limit to baseline-JPEG values */);
     jpeg_start_compress(&cinfo, TRUE);
-    row_stride = width * 3;             /* JSAMPLEs per row in image_buffer */
+    row_stride = w * 3;             /* JSAMPLEs per row in image_buffer */
 
     while (cinfo.next_scanline < cinfo.image_height) {
-        row_pointer[0] = &buffer[cinfo.next_scanline * row_stride];
+        row_pointer[0] = &buf[cinfo.next_scanline * row_stride];
         (void) jpeg_write_scanlines(&cinfo, row_pointer, 1);
     }
 
@@ -161,64 +149,64 @@ int writeJpegImage(char *filename, int width, int height, uint8_t *buffer) {
     return 0;
 }
 
-// writePngImageWithStb writes an image to the disk using the PNG format.
-// Returns zero on failure. Does not support compression.
-int writePngImageWithStb(char *filename, int width, int height, uint8_t *buffer) {
-    return stbi_write_png(filename, width, height, 3, buffer, width * 3);
+// writePngImageWithStb writes an image to disk in PNG format using the 'stb'
+// library. Returns zero on failure. Does not support compression.
+int writePngImageWithStb(char *fname, int w, int h, uint8_t *buf) {
+    return stbi_write_png(fname, w, h, 3, buf, w * 3);
 }
 
-// write_image writes an image to the disk.
-// Returns the target file path on success.
-const char *write_image(
-        const char *output_folder_path,
-        int fn, // Frame number.
-        int width,
-        int height,
-        uint8_t *buffer) {
+/*
+ * Write the image to disk.
+ *
+ * @param outfdp    output folder path
+ * @param fn        current frame number
+ * @param w         width of the image
+ * @param h         height of the image
+ * @param buf       RGB image data taken from FFmpeg
+ * @param writer    file writer type
+ *
+ * @return          negative error code in case of failure, otherwise >= 0.
+ */
+int write_image(const char *outfdp,
+                int fn,
+                int w,
+                int h,
+                uint8_t *buf,
+                char *writer) {
+    char fname[1024];
 
-    char image_filename[1024];
-    const char *target_filename;
-
-    // Write the Frame to a PNG File using the 'stb'.
-    // Note: this library returns 0 on failure.
-    sprintf(image_filename, "%s\\%d.png", output_folder_path, fn);
-    target_filename = getFilePath(output_folder_path, fn, ".png");
-    int result = writePngImageWithStb(
-            image_filename,
-            width,
-            height,
-            buffer);
-    if (result == 0) {
-        return NULL;
+    if (strcmp(writer, "png-stb") == 0) {
+        // Write the image to a PNG file using the 'stb' library.
+        // Note: This library returns 0 on failure.
+        sprintf(fname, "%s\\%d.png", outfdp, fn);
+        int res = writePngImageWithStb(fname, w, h, buf);
+        if (res == 0) {
+            return -1;
+        }
+        return 0;
     }
-    return target_filename;
 
-    // Unused code is below.
-
-    // Write the frame to a PNG file using the 'libpng'.
-    sprintf(image_filename, "%s/%d.png", output_folder_path, fn);
-    target_filename = getFilePath(output_folder_path, fn, ".png");
-    result = writePngImageWithLibpng(
-            image_filename,
-            width,
-            height,
-            buffer,
-            "image");
-    if (result != 0) {
-        return NULL;
+    if (strcmp(writer, "libpng") == 0) {
+        // Write the image to a PNG file using the 'libpng'.
+        // Note: This library returns 0 on success.
+        sprintf(fname, "%s\\%d.png", outfdp, fn);
+        int res = writePngImageWithLibpng(fname, w, h, buf, "image");
+        if (res != 0) {
+            return -1;
+        }
+        return 0;
     }
-    return target_filename;
 
-    // Write the frame to a JPEG file.
-    sprintf(image_filename, "%s/%d.jpg", output_folder_path, fn);
-    target_filename = getFilePath(output_folder_path, fn, ".jpg");
-    result = writeJpegImage(
-            image_filename,
-            width,
-            height,
-            buffer);
-    if (result != 0) {
-        return NULL;
+    if (strcmp(writer, "libjpeg") == 0) {
+        // Write the image to a JPEG file using the 'libjpeg'.
+        // Note: This library returns 0 on success.
+        sprintf(fname, "%s\\%d.jpg", outfdp, fn);
+        int res = writeJpegImage(fname, w, h, buf);
+        if (res != 0) {
+            return -1;
+        }
+        return 0;
     }
-    return target_filename;
+
+    return -2;
 }

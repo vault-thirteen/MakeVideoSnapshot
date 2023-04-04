@@ -12,12 +12,14 @@
  *
  * @param infp      input file path
  * @param outfdp    output folder path
+ * @param writer    file writer type
  * @param fn        number of processed frames
  *
  * @return          negative error code in case of failure, otherwise >= 0.
  */
 int make_video_snapshots(const char *infp,
                          const char *outfdp,
+                         char *writer,
                          int *fn) {
     AVFormatContext *fmt_ctx = NULL;
     int err = avformat_open_input(&fmt_ctx, infp, NULL, NULL); // [!] The stream must be closed with avformat_close_input().
@@ -165,7 +167,7 @@ int make_video_snapshots(const char *infp,
         return err;
     }
 
-    err = decode_and_process_frames(outfdp, fn, buf, buf_size, fmt_ctx, stream, ctx, conv_ctx, rgb_dst, rgb_dstStride, rgb_buf, pkt, fr);
+    err = decode_and_process_frames(outfdp, fn, buf, buf_size, fmt_ctx, stream, ctx, conv_ctx, rgb_dst, rgb_dstStride, rgb_buf, pkt, fr, writer);
     if (err < 0) {
         av_frame_free(&fr);
         av_packet_free(&pkt);
@@ -193,6 +195,7 @@ int make_video_snapshots(const char *infp,
  *
  * @param outfdp    output folder path
  * @param fn        number of processed frames
+ * @param writer    file writer type
  *
  * @return          negative error code in case of failure.
  */
@@ -208,11 +211,11 @@ int decode_and_process_frames(const char *outfdp,
                               const int rgb_dstStride[1],
                               uint8_t *rgb_buf,
                               AVPacket *pkt,
-                              AVFrame *fr) {
+                              AVFrame *fr,
+                              char *writer) {
     // Read frames and process them.
     int err = 0;
     while (1) {
-        //if (*fn > 5) { break; }//TODO:DEBUG.
         // Read a frame.
         err = av_read_frame(fmt_ctx, pkt); // [!] The packet must be freed with av_packet_unref() when it is no longer needed.
         if (err < 0) {
@@ -235,7 +238,7 @@ int decode_and_process_frames(const char *outfdp,
         if (err < 0) {
             if (err == AVERROR(EAGAIN)) {
                 // Receive and process decoded frames.
-                err = process_decoded_frames(ctx, fr, buf, buf_size, conv_ctx, rgb_dst, rgb_dstStride, rgb_buf, outfdp, fn);
+                err = process_decoded_frames(ctx, fr, buf, buf_size, conv_ctx, rgb_dst, rgb_dstStride, rgb_buf, outfdp, fn, writer);
                 if (err < 0) {
                     if (err != AVERROR(EAGAIN)) {
                         av_log(NULL, AV_LOG_ERROR, "Can not process decoded frames, frame number: %d.\n", *fn);
@@ -254,7 +257,7 @@ int decode_and_process_frames(const char *outfdp,
         }
 
         // Receive and process decoded frames.
-        err = process_decoded_frames(ctx, fr, buf, buf_size, conv_ctx, rgb_dst, rgb_dstStride, rgb_buf, outfdp, fn);
+        err = process_decoded_frames(ctx, fr, buf, buf_size, conv_ctx, rgb_dst, rgb_dstStride, rgb_buf, outfdp, fn, writer);
         if (err < 0) {
             if (err == AVERROR(EAGAIN)) {
                 // no av_packet_unref() here because we need additional data.
@@ -275,7 +278,7 @@ int decode_and_process_frames(const char *outfdp,
             return err;
         }
 
-        err = process_decoded_frames(ctx, fr, buf, buf_size, conv_ctx, rgb_dst, rgb_dstStride, rgb_buf, outfdp, fn);
+        err = process_decoded_frames(ctx, fr, buf, buf_size, conv_ctx, rgb_dst, rgb_dstStride, rgb_buf, outfdp, fn, writer);
         if (err < 0) {
             if (err == AVERROR_EOF) {
                 break;
@@ -293,6 +296,7 @@ int decode_and_process_frames(const char *outfdp,
  *
  * @param outfdp    output folder path
  * @param fn        current frame number
+ * @param writer    file writer type
  *
  * @return          negative error code in case of failure, otherwise >= 0.
  */
@@ -305,7 +309,8 @@ int process_decoded_frames(AVCodecContext *ctx,
                            const int rgb_dstStride[1],
                            uint8_t *rgb_buf,
                            const char *outfdp,
-                           int *fn) {
+                           int *fn,
+                           char *writer) {
     while (1) {
         int err = avcodec_receive_frame(ctx, fr); // [!] It always calls av_frame_unref(frame) before doing anything else.
         if (err < 0) {
@@ -349,13 +354,13 @@ int process_decoded_frames(AVCodecContext *ctx,
             return ERR_SWS_SCALE;
         }
 
-        const char *outfp = write_image(outfdp, *fn, ctx->width, ctx->height, rgb_buf); // Output file path.
-        if (outfp == NULL) {
+        err = write_image(outfdp, *fn, ctx->width, ctx->height, rgb_buf, writer); // Output file path.
+        if (err < 0) {
             av_log(NULL, AV_LOG_ERROR, "Error writing image file, frame number: %d.\n", *fn);
             av_frame_unref(fr);
             return ERR_WRITE_IMAGE;
         }
-        av_log(NULL, AV_LOG_INFO, "File was written to disk: %s.\n", outfp);
+        av_log(NULL, AV_LOG_INFO, "File was written to disk, frame number: %d.\n", *fn);
 
         // Next frame.
         (*fn)++;
