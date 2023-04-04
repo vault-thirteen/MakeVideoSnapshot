@@ -3,6 +3,7 @@
 #include "libavutil/adler32.h"
 #include "libpng/png.h"
 #include "libjpeg/jpeglib.h"
+#include "zlib/zlib.h"
 
 #ifndef STB_IMAGE_WRITE_IMPLEMENTATION
 #define STB_IMAGE_WRITE_IMPLEMENTATION
@@ -12,79 +13,116 @@
 #endif //STB_IMAGE_WRITE_IMPLEMENTATION
 
 
-// writePngImageWithLibpng writes an image to disk in PNG format using the
-// 'libpng' library. Returns zero on success.
-int writePngImageWithLibpng(char *fname, int w, int h, const uint8_t *buf, char *title) {
-    //TODO
-    int code = 0;
+/*
+ * Write an image to disk in PNG format using the 'libpng' library.
+ *
+ * @param fname     output file path
+ * @param w         width of image
+ * @param h         height of image
+ * @param buf       pixel data from FFmpeg, RGB format, 8 bits per channel
+ * @param title     image's title (meta-data field)
+ *
+ * @doc             http://www.libpng.org/pub/png/libpng-manual.txt
+ * @doc             https://www.w3.org/TR/PNG-Rationale.html
+ *
+ * @return          negative error code in case of failure, otherwise >= 0.
+ */
+int write_with_libpng(char *fname, int w, int h, const uint8_t *buf, char *title) {
+    int exit_code = 0;
     png_structp png_ptr = NULL;
     png_infop info_ptr = NULL;
     png_bytep row = NULL;
 
-    // Open file for writing (binary mode)
+    // Open the file for writing in binary mode.
     FILE *fp = NULL;
-    errno_t err = fopen_s(&fp, fname, "wb");
+    errno_t err = fopen_s(&fp, fname, "wb"); // [!] -> fclose.
     if (err != 0) {
-        fprintf(stderr, "Could not open file %s for writing\n", fname);
-        code = 1;
+        fprintf(stderr, "Can not open file for writing: %s.\n", fname);
+        exit_code = -1; //TODO
         goto finalize;
     }
 
-    // Initialize write structure
-    png_ptr = png_create_write_struct(PNG_LIBPNG_VER_STRING, NULL, NULL, NULL);
+    // Initialize a write structure.
+    png_ptr = png_create_write_struct(PNG_LIBPNG_VER_STRING, NULL, NULL, NULL); // [!] -> png_destroy_write_struct.
     if (png_ptr == NULL) {
-        fprintf(stderr, "Could not allocate write struct\n");
-        code = 1;
+        fprintf(stderr, "Can not allocate a write struct.\n");
+        exit_code = -2; //TODO
         goto finalize;
     }
 
-    // Initialize info structure
+    // Initialize an info structure.
     info_ptr = png_create_info_struct(png_ptr);
     if (info_ptr == NULL) {
-        fprintf(stderr, "Could not allocate info struct\n");
-        code = 1;
+        fprintf(stderr, "Can not allocate an info struct.\n");
+        exit_code = -3; //TODO
         goto finalize;
     }
 
-    // Setup exception handling
+    // Exception handling.
     if (setjmp(png_jmpbuf(png_ptr))) {
-        fprintf(stderr, "Error during png creation\n");
-        code = 1;
+        fprintf(stderr, "libpng error\n");
+        exit_code = -4; //TODO
         goto finalize;
     }
 
     png_init_io(png_ptr, fp);
 
-    // Write header (8-bit colour depth)
-    png_set_IHDR(png_ptr, info_ptr, w, h,
-                 8, PNG_COLOR_TYPE_RGB, PNG_INTERLACE_NONE,
-                 PNG_COMPRESSION_TYPE_BASE, PNG_FILTER_TYPE_BASE);
+    // Write a header.
+    /*
+     * [ A quote from the manual ]
+     *
+     * If you wish, you can reset the compression_type, interlace_type, or
+     * filter_method later by calling png_set_IHDR() again; if you do this, the
+     * width, height, bit_depth, and color_type must be the same in each call.
+     */
+    png_set_IHDR(png_ptr, info_ptr, w, h, 8,
+                 PNG_COLOR_TYPE_RGB, // TODO: Change to PNG_COLOR_TYPE_RGBA if the source has alpha channel.
+                 PNG_INTERLACE_NONE,
+                 PNG_COMPRESSION_TYPE_DEFAULT,
+                 PNG_FILTER_TYPE_DEFAULT);
 
-    // Set title
+    // Disable PNG signature for MNG.
+    //png_set_sig_bytes(png_ptr, 8);
+
+    // Filtering. It will be adaptive, so we enable all possible filters.
+    /*
+     * [ A quote from the manual ]
+     *
+     * If an application wants to start and stop using particular filters
+     * during compression, it should start out with all of the filters (to
+     * ensure that the previous row of pixels will be stored in case it's
+     * needed later), and then add and remove them after the start of
+     * compression.
+     */
+    png_set_filter(png_ptr, 0, PNG_ALL_FILTERS);
+
+    // Compression.
+    png_set_compression_level(png_ptr, Z_BEST_COMPRESSION);
+
+    // Meta-data: Title.
     if (title != NULL) {
-        png_text title_text = {
-                PNG_TEXT_COMPRESSION_NONE,
-                "Title",
-                title,
-                strlen(title),
-                0,
-                NULL,
-                NULL,
-        };
+        png_text title_text = {PNG_TEXT_COMPRESSION_NONE, "Title", title,
+                               strlen(title), 0, NULL, NULL};
         png_set_text(png_ptr, info_ptr, &title_text, 1);
     }
 
     png_write_info(png_ptr, info_ptr);
 
-    // Allocate memory for one row (3 bytes per pixel - RGB)
-    row = (png_bytep) malloc(3 * w * sizeof(png_byte));
+    //png_set_filler(png_ptr, 0, PNG_FILLER_AFTER; // RGBX.
+    //png_set_bgr(png_ptr); //BGR.
 
-    // Write image data
+    // Allocate memory for one row of pixels (3 bytes per pixel – RGB).
+    // TODO: Change to 4 if the source has alpha channel.
+    row = (png_bytep) malloc(3 * w * sizeof(png_byte)); // [!] -> free.
+
+    // Write all the pixels.
+    png_bytep row_pointer = row;
     int x, y, i, j;
     for (y = 0; y < h; y++) {
         for (x = 0; x < w; x++) {
+            // TODO: Add alpha channel byte if the source has it.
             i = x * 3;
-            j = (y * w) + i;
+            j = (y * w * 3) + i;
             row[i] = buf[j]; // Red.
             i++;
             j++;
@@ -93,19 +131,18 @@ int writePngImageWithLibpng(char *fname, int w, int h, const uint8_t *buf, char 
             j++;
             row[i] = buf[j]; // Blue.
         }
-        png_write_row(png_ptr, row);
+        png_write_row(png_ptr, row_pointer); // For some reason CLion's debugger crashes here when y=88. [WTF ?!]
     }
 
-    // End write
-    png_write_end(png_ptr, NULL);
+    // Finish writing the PNG file.
+    png_write_end(png_ptr, info_ptr);
 
     finalize:
-    if (fp != NULL) fclose(fp);
-    if (info_ptr != NULL) png_free_data(png_ptr, info_ptr, PNG_FREE_ALL, -1);
-    if (png_ptr != NULL) png_destroy_write_struct(&png_ptr, (png_infopp) NULL);
+    if (png_ptr != NULL) png_destroy_write_struct(&png_ptr, &info_ptr);
     if (row != NULL) free(row);
+    if (fp != NULL) fclose(fp);
 
-    return code;
+    return exit_code;
 }
 
 // writeJpegImage writes an image to disk in JPEG format using the 'libjpeg'
@@ -149,14 +186,24 @@ int writeJpegImage(char *fname, int w, int h, uint8_t *buf) {
     return 0;
 }
 
-// writePngImageWithStb writes an image to disk in PNG format using the 'stb'
-// library. Returns zero on failure. Does not support compression.
-int writePngImageWithStb(char *fname, int w, int h, uint8_t *buf) {
+/*
+ * Write an image to disk in PNG format using the 'stb' library.
+ * Uses no compression.
+ *
+ * @param fname     output file path
+ * @param w         width of image
+ * @param h         height of image
+ * @param buf       pixel data from FFmpeg, RGB format, 8 bits per channel
+ *
+ * @return          zero of failure
+ */
+int write_with_stb(char *fname, int w, int h, uint8_t *buf) {
     return stbi_write_png(fname, w, h, 3, buf, w * 3);
 }
 
 /*
  * Write the image to disk.
+ * File path length is limited to 1024 bytes. //TODO: Dynamic length.
  *
  * @param outfdp    output folder path
  * @param fn        current frame number
@@ -167,21 +214,16 @@ int writePngImageWithStb(char *fname, int w, int h, uint8_t *buf) {
  *
  * @return          negative error code in case of failure, otherwise >= 0.
  */
-int write_image(const char *outfdp,
-                int fn,
-                int w,
-                int h,
-                uint8_t *buf,
-                char *writer) {
+int write_image(const char *outfdp, int fn, int w, int h, uint8_t *buf, char *writer) {
     char fname[1024];
 
     if (strcmp(writer, "png-stb") == 0) {
         // Write the image to a PNG file using the 'stb' library.
         // Note: This library returns 0 on failure.
         sprintf(fname, "%s\\%d.png", outfdp, fn);
-        int res = writePngImageWithStb(fname, w, h, buf);
+        int res = write_with_stb(fname, w, h, buf);
         if (res == 0) {
-            return -1;
+            return -1;//TODO
         }
         return 0;
     }
@@ -190,9 +232,9 @@ int write_image(const char *outfdp,
         // Write the image to a PNG file using the 'libpng'.
         // Note: This library returns 0 on success.
         sprintf(fname, "%s\\%d.png", outfdp, fn);
-        int res = writePngImageWithLibpng(fname, w, h, buf, "image");
+        int res = write_with_libpng(fname, w, h, buf, "image");
         if (res != 0) {
-            return -1;
+            return -1;//TODO
         }
         return 0;
     }
@@ -203,10 +245,10 @@ int write_image(const char *outfdp,
         sprintf(fname, "%s\\%d.jpg", outfdp, fn);
         int res = writeJpegImage(fname, w, h, buf);
         if (res != 0) {
-            return -1;
+            return -1;//TODO
         }
         return 0;
     }
 
-    return -2;
+    return -2;//TODO
 }
