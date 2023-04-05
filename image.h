@@ -10,6 +10,8 @@
 #define FILE_EXT_PNG "png"
 #define FILE_EXT_JPEG "jpeg"
 
+#define JPEG_QUALITY 100
+
 #define META_TITLE_PREFIX "Frame #"
 
 #define ERR_MAKE_FILE_PATH (-1)
@@ -23,7 +25,7 @@
  * @param fname     output file path
  * @param w         width of image
  * @param h         height of image
- * @param buf       pixel data from FFmpeg, RGB format, 8 bits per channel
+ * @param buf       pixel data from FFmpeg, RGBA format, 8 bits per channel
  * @param title     image's title (meta-data field)
  *
  * @doc             http://www.libpng.org/pub/png/libpng-manual.txt
@@ -33,10 +35,17 @@
  */
 errno_t write_with_libpng(const char *fname, int w, int h, const uint8_t *buf, const char *title);
 
-//TODO
-// writeJpegImage writes an image to disk in JPEG format using the 'libjpeg'
-// library. Returns zero on success.
-errno_t writeJpegImage(const char *fname, int w, int h, uint8_t *buf);
+/*
+ * Write an image to disk in JPEG format using the 'libjpeg' library.
+ *
+ * @param fname     output file path
+ * @param w         width of image
+ * @param h         height of image
+ * @param buf       pixel data from FFmpeg, RGB format, 8 bits per channel
+ *
+ * @return          negative error code in case of failure, otherwise >= 0.
+ */
+errno_t write_with_libjpeg(const char *fname, int w, int h, uint8_t *buf);
 
 /*
  * Write an image to disk in PNG format using the 'stb' library.
@@ -45,7 +54,7 @@ errno_t writeJpegImage(const char *fname, int w, int h, uint8_t *buf);
  * @param fname     output file path
  * @param w         width of image
  * @param h         height of image
- * @param buf       pixel data from FFmpeg, RGB format, 8 bits per channel
+ * @param buf       pixel data from FFmpeg, RGBA format, 8 bits per channel
  *
  * @return          zero of failure
  */
@@ -58,7 +67,7 @@ errno_t write_with_stb(const char *fname, int w, int h, uint8_t *buf);
  * @param fn        current frame number
  * @param w         width of the image
  * @param h         height of the image
- * @param buf       RGB image data taken from FFmpeg
+ * @param buf       RGB(A) image data taken from FFmpeg
  * @param writer    file writer type
  *
  * @return          negative error code in case of failure, otherwise >= 0.

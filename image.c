@@ -20,7 +20,7 @@
  * @param fname     output file path
  * @param w         width of image
  * @param h         height of image
- * @param buf       pixel data from FFmpeg, RGB format, 8 bits per channel
+ * @param buf       pixel data from FFmpeg, RGBA format, 8 bits per channel
  * @param title     image's title (meta-data field)
  *
  * @doc             http://www.libpng.org/pub/png/libpng-manual.txt
@@ -147,45 +147,52 @@ errno_t write_with_libpng(const char *fname, int w, int h, const uint8_t *buf, c
     return exit_code;
 }
 
-//TODO
-// writeJpegImage writes an image to disk in JPEG format using the 'libjpeg'
-// library. Returns zero on success.
-errno_t writeJpegImage(const char *fname, int w, int h, uint8_t *buf) {
-    int quality = 100;
-    struct jpeg_compress_struct cinfo;
-    struct jpeg_error_mgr jerr;
-    FILE *outfile;              /* target file */
-    JSAMPROW row_pointer[1];    /* pointer to JSAMPLE row[s] */
-    int row_stride;             /* physical row w in image buf */
+/*
+ * Write an image to disk in JPEG format using the 'libjpeg' library.
+ *
+ * @param fname     output file path
+ * @param w         width of image
+ * @param h         height of image
+ * @param buf       pixel data from FFmpeg, RGB format, 8 bits per channel
+ *
+ * @return          negative error code in case of failure, otherwise >= 0.
+ */
+errno_t write_with_libjpeg(const char *fname, int w, int h, uint8_t *buf) {
+    struct jpeg_error_mgr jem;
 
-    cinfo.err = jpeg_std_error(&jerr);
-    jpeg_create_compress(&cinfo);
+    struct jpeg_compress_struct jcs;
+    jcs.err = jpeg_std_error(&jem);
+    jpeg_create_compress(&jcs);
 
+    FILE *outfile;
     errno_t err = fopen_s(&outfile, fname, "wb");
     if (err != 0) {
-        fprintf(stderr, "can't open %s\n", fname);
-        return -1;
+        fprintf(stderr, "Can not open file for writing: %s.\n", fname);
+        return ERR_FILE_OPEN;
     }
-    jpeg_stdio_dest(&cinfo, outfile);
+    jpeg_stdio_dest(&jcs, outfile);
 
-    cinfo.image_width = w;          /* image w and h, in pixels */
-    cinfo.image_height = h;
-    cinfo.input_components = 3;        /* # of color components per pixel */
-    cinfo.in_color_space = JCS_RGB;    /* colorspace of input image */
-    jpeg_set_defaults(&cinfo);
-    jpeg_set_quality(&cinfo, quality, TRUE /* limit to baseline-JPEG values */);
-    jpeg_start_compress(&cinfo, TRUE);
-    row_stride = w * 3;             /* JSAMPLEs per row in image_buffer */
+    jcs.image_width = w;
+    jcs.image_height = h;
+    jcs.input_components = 3;
+    jcs.in_color_space = JCS_RGB; // Colour space of input image.
 
-    while (cinfo.next_scanline < cinfo.image_height) {
-        row_pointer[0] = &buf[cinfo.next_scanline * row_stride];
-        (void) jpeg_write_scanlines(&cinfo, row_pointer, 1);
+    jpeg_set_defaults(&jcs);
+    jpeg_set_quality(&jcs, JPEG_QUALITY, TRUE);
+    jpeg_start_compress(&jcs, TRUE);
+
+    JSAMPROW row_pointer[1];
+    JDIMENSION row_stride = jcs.image_width * 3; /* physical row width in image buffer */
+
+    while (jcs.next_scanline < jcs.image_height) {
+        row_pointer[0] = &buf[jcs.next_scanline * row_stride];
+        jpeg_write_scanlines(&jcs, row_pointer, 1);
     }
 
-    jpeg_finish_compress(&cinfo);
+    jpeg_finish_compress(&jcs);
     fclose(outfile);
-    jpeg_destroy_compress(&cinfo);
-    return 0;
+    jpeg_destroy_compress(&jcs);
+    return SUCCESS;
 }
 
 /*
@@ -195,7 +202,7 @@ errno_t writeJpegImage(const char *fname, int w, int h, uint8_t *buf) {
  * @param fname     output file path
  * @param w         width of image
  * @param h         height of image
- * @param buf       pixel data from FFmpeg, RGB format, 8 bits per channel
+ * @param buf       pixel data from FFmpeg, RGBA format, 8 bits per channel
  *
  * @return          zero of failure
  */
@@ -210,7 +217,7 @@ errno_t write_with_stb(const char *fname, int w, int h, uint8_t *buf) {
  * @param fn        current frame number
  * @param w         width of the image
  * @param h         height of the image
- * @param buf       RGB image data taken from FFmpeg
+ * @param buf       RGB(A) image data taken from FFmpeg
  * @param writer    file writer type
  *
  * @return          negative error code in case of failure, otherwise >= 0.
@@ -270,7 +277,7 @@ errno_t write_image(const char *outfdp, int fn, int w, int h, uint8_t *buf, cons
         }
 
         // Note: This library returns 0 on success.
-        int res = writeJpegImage(fname, w, h, buf);
+        int res = write_with_libjpeg(fname, w, h, buf);
         if (res != 0) {
             free(fname);
             return ERR_ENCODE;
