@@ -10,6 +10,8 @@
 #define INT_PARSE_ERROR_LONG_OVERFLOW (-3)
 #define INT_PARSE_ERROR_INT_OVERFLOW (-4)
 
+#define MALLOC_ERROR (-1)
+
 /*
  * Parses a text into 'int' type.
  *

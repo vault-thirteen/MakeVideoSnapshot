@@ -7,8 +7,15 @@
 #define WRITER_STB "stb"
 #define WRITER_LIBJPEG "libjpeg"
 
-#define ERR_ENCODE (-1)
-#define ERR_UNKNOWN_WRITER (-2)
+#define FILE_EXT_PNG "png"
+#define FILE_EXT_JPEG "jpeg"
+
+#define META_TITLE_PREFIX "Frame #"
+
+#define ERR_MAKE_FILE_PATH (-1)
+#define ERR_METADATA (-2)
+#define ERR_ENCODE (-3)
+#define ERR_UNKNOWN_WRITER (-4)
 
 /*
  * Write an image to disk in PNG format using the 'libpng' library.
@@ -24,12 +31,12 @@
  *
  * @return          negative error code in case of failure, otherwise >= 0.
  */
-errno_t write_with_libpng(char *fname, int w, int h, const uint8_t *buf, char *title);
+errno_t write_with_libpng(const char *fname, int w, int h, const uint8_t *buf, const char *title);
 
 //TODO
 // writeJpegImage writes an image to disk in JPEG format using the 'libjpeg'
 // library. Returns zero on success.
-errno_t writeJpegImage(char *fname, int w, int h, uint8_t *buf);
+errno_t writeJpegImage(const char *fname, int w, int h, uint8_t *buf);
 
 /*
  * Write an image to disk in PNG format using the 'stb' library.
@@ -42,11 +49,10 @@ errno_t writeJpegImage(char *fname, int w, int h, uint8_t *buf);
  *
  * @return          zero of failure
  */
-errno_t write_with_stb(char *fname, int w, int h, uint8_t *buf);
+errno_t write_with_stb(const char *fname, int w, int h, uint8_t *buf);
 
 /*
  * Write the image to disk.
- * File path length is limited to 1024 bytes. //TODO: Dynamic length.
  *
  * @param outfdp    output folder path
  * @param fn        current frame number
@@ -57,7 +63,30 @@ errno_t write_with_stb(char *fname, int w, int h, uint8_t *buf);
  *
  * @return          negative error code in case of failure, otherwise >= 0.
  */
-errno_t write_image(const char *outfdp, int fn, int w, int h, uint8_t *buf, char *writer);
+errno_t write_image(const char *outfdp, int fn, int w, int h, uint8_t *buf, const char *writer);
 
+/*
+ * Composes a file path by concatenating the folder path and frame number.
+ * The returned pointer must be freed after usage.
+ *
+ * @param fp        file path
+ * @param outfdp    output folder path
+ * @param fn        frame number
+ * @param ext       file extension
+ *
+ * @return          negative error code in case of failure, otherwise >= 0.
+ */
+errno_t make_file_path(char **fp, const char *outfdp, int fn, const char *ext);
+
+/*
+ * Composes a title meta-data field.
+ * The returned pointer must be freed after usage.
+ *
+ * @param title     title
+ * @param fn        frame number
+ *
+ * @return          negative error code in case of failure, otherwise >= 0.
+ */
+errno_t make_metadata_title(char **title, int fn);
 
 #endif //INC_SnapshotMaker_IMAGE_H

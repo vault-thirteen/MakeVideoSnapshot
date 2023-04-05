@@ -1,5 +1,4 @@
 #include <stdio.h>
-#include "libavutil/adler32.h"
 #include "libpng/png.h"
 #include "libjpeg/jpeglib.h"
 #include "zlib/zlib.h"
@@ -29,7 +28,7 @@
  *
  * @return          negative error code in case of failure, otherwise >= 0.
  */
-errno_t write_with_libpng(char *fname, int w, int h, const uint8_t *buf, char *title) {
+errno_t write_with_libpng(const char *fname, int w, int h, const uint8_t *buf, const char *title) {
     errno_t exit_code = SUCCESS;
     png_structp png_ptr = NULL;
     png_infop info_ptr = NULL;
@@ -151,7 +150,7 @@ errno_t write_with_libpng(char *fname, int w, int h, const uint8_t *buf, char *t
 //TODO
 // writeJpegImage writes an image to disk in JPEG format using the 'libjpeg'
 // library. Returns zero on success.
-errno_t writeJpegImage(char *fname, int w, int h, uint8_t *buf) {
+errno_t writeJpegImage(const char *fname, int w, int h, uint8_t *buf) {
     int quality = 100;
     struct jpeg_compress_struct cinfo;
     struct jpeg_error_mgr jerr;
@@ -200,13 +199,12 @@ errno_t writeJpegImage(char *fname, int w, int h, uint8_t *buf) {
  *
  * @return          zero of failure
  */
-errno_t write_with_stb(char *fname, int w, int h, uint8_t *buf) {
+errno_t write_with_stb(const char *fname, int w, int h, uint8_t *buf) {
     return stbi_write_png(fname, w, h, PIXEL_CHANNELS_COUNT, buf, w * PIXEL_CHANNELS_COUNT);
 }
 
 /*
  * Write the image to disk.
- * File path length is limited to 1024 bytes. //TODO: Dynamic length.
  *
  * @param outfdp    output folder path
  * @param fn        current frame number
@@ -217,41 +215,127 @@ errno_t write_with_stb(char *fname, int w, int h, uint8_t *buf) {
  *
  * @return          negative error code in case of failure, otherwise >= 0.
  */
-errno_t write_image(const char *outfdp, int fn, int w, int h, uint8_t *buf, char *writer) {
-    char fname[1024];
+errno_t write_image(const char *outfdp, int fn, int w, int h, uint8_t *buf, const char *writer) {
+    char *fname = NULL;
+    errno_t err;
 
     if (strcmp(writer, WRITER_LIBPNG) == 0) {
         // Write the image to a PNG file using the 'libpng'.
+        err = make_file_path(&fname, outfdp, fn, FILE_EXT_PNG);
+        if (err < 0) {
+            return ERR_MAKE_FILE_PATH;
+        }
+
+        char *title = NULL;
+        err = make_metadata_title(&title, fn);
+        if (err < 0) {
+            free(fname);
+            return ERR_METADATA;
+        }
+
         // Note: This library returns 0 on success.
-        sprintf(fname, "%s\\%d.png", outfdp, fn);
-        int res = write_with_libpng(fname, w, h, buf, "image"); //TODO:Title.
+        int res = write_with_libpng(fname, w, h, buf, title);
         if (res != 0) {
+            free(title);
+            free(fname);
             return ERR_ENCODE;
         }
+        free(title);
+        free(fname);
         return SUCCESS;
     }
 
     if (strcmp(writer, WRITER_STB) == 0) {
         // Write the image to a PNG file using the 'stb' library.
+        err = make_file_path(&fname, outfdp, fn, FILE_EXT_PNG);
+        if (err < 0) {
+            return ERR_MAKE_FILE_PATH;
+        }
+
         // Note: This library returns 0 on failure.
-        sprintf(fname, "%s\\%d.png", outfdp, fn);
         int res = write_with_stb(fname, w, h, buf);
         if (res == 0) {
+            free(fname);
             return ERR_ENCODE;
         }
+        free(fname);
         return SUCCESS;
     }
 
     if (strcmp(writer, WRITER_LIBJPEG) == 0) {
         // Write the image to a JPEG file using the 'libjpeg'.
+        err = make_file_path(&fname, outfdp, fn, FILE_EXT_JPEG);
+        if (err < 0) {
+            return ERR_MAKE_FILE_PATH;
+        }
+
         // Note: This library returns 0 on success.
-        sprintf(fname, "%s\\%d.jpg", outfdp, fn);
         int res = writeJpegImage(fname, w, h, buf);
         if (res != 0) {
+            free(fname);
             return ERR_ENCODE;
         }
+        free(fname);
         return SUCCESS;
     }
 
     return ERR_UNKNOWN_WRITER;
+}
+
+/*
+ * Composes a file path by concatenating the folder path and frame number.
+ * The returned pointer must be freed after usage.
+ *
+ * @param fp        file path
+ * @param outfdp    output folder path
+ * @param fn        frame number
+ * @param ext       file extension
+ *
+ * @return          negative error code in case of failure, otherwise >= 0.
+ */
+errno_t make_file_path(char **fp, const char *outfdp, int fn, const char *ext) {
+    // INT_MAX is 2147483647, i.e. 10 ASCII symbols.
+    // INT_MIN is -2147483648, i.e. 11 ASCII symbols.
+    char num[11 + 1]; // Last symbol is NUL.
+    snprintf(num, sizeof num, "%d", fn);
+
+    // Template: 'C:\Files' + '\' + '123.png' + NUL.
+    size_t result_len = strlen(outfdp) + 1 + strlen(num) + 1 + strlen(ext) + 1;
+
+    char *result = (char *) malloc(result_len);
+    if (result == NULL) {
+        return MALLOC_ERROR;
+    }
+
+    sprintf(result, "%s\\%s.%s", outfdp, num, ext);
+    *fp = result;
+    return SUCCESS;
+}
+
+/*
+ * Composes a title meta-data field.
+ * The returned pointer must be freed after usage.
+ *
+ * @param title     title
+ * @param fn        frame number
+ *
+ * @return          negative error code in case of failure, otherwise >= 0.
+ */
+errno_t make_metadata_title(char **title, int fn) {
+    // INT_MAX is 2147483647, i.e. 10 ASCII symbols.
+    // INT_MIN is -2147483648, i.e. 11 ASCII symbols.
+    char num[11 + 1]; // Last symbol is NUL.
+    snprintf(num, sizeof num, "%d", fn);
+
+    // Template: 'Frame #' + '123' + NUL.
+    size_t result_len = strlen(META_TITLE_PREFIX) + strlen(num) + 1;
+
+    char *result = (char *) malloc(result_len);
+    if (result == NULL) {
+        return MALLOC_ERROR;
+    }
+
+    sprintf(result, "%s%s", META_TITLE_PREFIX, num);
+    *title = result;
+    return SUCCESS;
 }
