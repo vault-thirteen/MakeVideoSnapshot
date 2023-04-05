@@ -58,6 +58,7 @@ int make_video_snapshots(const char *infp,
         return ERR_CODEC_PARAMETER;
     }
 
+    //TODO: avcodec_find_decoder_by_name ...
     const AVCodec *codec = avcodec_find_decoder(codecpar->codec_id);
     if (codec == NULL) {
         av_log(NULL, AV_LOG_ERROR, "Can not find a decoder, file: %s.\n", infp);
