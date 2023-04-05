@@ -6,18 +6,6 @@
 #include "libswscale/swscale.h"
 
 
-#define ERR_CODEC_PARAMETER (-256)
-#define ERR_CODEC (-257)
-#define ERR_CODEC_CONTEXT (-258)
-#define ERR_PACKET (-259)
-#define ERR_BUFFER_SIZE (-260)
-#define ERR_BUFFER (-261)
-#define ERR_RGB_BUFFER_SIZE (-262)
-#define ERR_RGB_BUFFER (-263)
-#define ERR_SWS_CONTEXT (-264)
-#define ERR_SWS_SCALE (-265)
-#define ERR_WRITE_IMAGE (-266)
-
 /*
  * Decode the best video stream from the file, make snapshot images,
  * save them to disk.

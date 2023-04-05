@@ -5,6 +5,7 @@
 #include "libavformat/avformat.h"
 #include "libavutil/imgutils.h"
 #include "libswscale/swscale.h"
+#include "mvs.h"
 
 /*
  * Decode the best video stream from the file, make snapshot images,
@@ -103,7 +104,8 @@ int make_video_snapshots(const char *infp,
         return ERR_BUFFER;
     }
 
-    enum AVPixelFormat dstPixelFormat = AV_PIX_FMT_RGB24;
+    enum AVPixelFormat dstPixelFormat = AV_PIX_FMT_RGBA;    // RGBA 8:8:8:8, 32bpp, RGBA RGBA ...
+    //enum AVPixelFormat dstPixelFormat = AV_PIX_FMT_RGB24; // RGB 8:8:8, 24bpp, RGB RGB ...
     int rgb_buf_size = av_image_get_buffer_size(dstPixelFormat, ctx->width, ctx->height, 32);
     if (rgb_buf_size < 0) {
         av_log(NULL, AV_LOG_ERROR, "Can not get image buffer size, file: %s.\n", infp);
@@ -123,7 +125,7 @@ int make_video_snapshots(const char *infp,
     }
 
     uint8_t *const rgb_dst[1] = {rgb_buf};
-    const int rgb_dstStride[1] = {ctx->width * 3};
+    const int rgb_dstStride[1] = {ctx->width * PIXEL_CHANNELS_COUNT}; // RGBA.
 
     struct SwsContext *conv_ctx = sws_getContext(
             ctx->width,
@@ -166,6 +168,15 @@ int make_video_snapshots(const char *infp,
         avformat_close_input(&fmt_ctx);
         return err;
     }
+
+    // FFmpeg library uses a default decoder for WebM video. The default
+    // decoder does not recognize YUVA420p format and sees it as YUV420p.
+    // Even if I set the pixel format manually like so:
+    //      ctx->pix_fmt = AV_PIX_FMT_YUVA420P;
+    // the decoder is unable to see the alpha channel. This is disgusting.
+    // https://stackoverflow.com/questions/66702932/is-there-a-way-to-force-ffmpeg-to-decode-a-video-stream-with-alpha-from-a-webm
+    // There is a dirty trick to set the decoder manually. :\
+    //TODO
 
     err = decode_and_process_frames(outfdp, fn, buf, buf_size, fmt_ctx, stream, ctx, conv_ctx, rgb_dst, rgb_dstStride, rgb_buf, pkt, fr, writer);
     if (err < 0) {
@@ -339,7 +350,7 @@ int process_decoded_frames(AVCodecContext *ctx,
 //                   fr->width, fr->height);
 
 
-        // Convert the colour space (YUV -> RGB).
+        // Convert the colour space (YUV -> RGBA).
         int h = sws_scale(
                 conv_ctx,
                 (const uint8_t *const *) fr->data,

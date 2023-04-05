@@ -4,6 +4,7 @@
 #include "libpng/png.h"
 #include "libjpeg/jpeglib.h"
 #include "zlib/zlib.h"
+#include "mvs.h"
 
 #ifndef STB_IMAGE_WRITE_IMPLEMENTATION
 #define STB_IMAGE_WRITE_IMPLEMENTATION
@@ -38,7 +39,7 @@ int write_with_libpng(char *fname, int w, int h, const uint8_t *buf, char *title
     errno_t err = fopen_s(&fp, fname, "wb"); // [!] -> fclose.
     if (err != 0) {
         fprintf(stderr, "Can not open file for writing: %s.\n", fname);
-        exit_code = -1; //TODO
+        exit_code = ERR_FILE_OPEN;
         goto finalize;
     }
 
@@ -46,7 +47,7 @@ int write_with_libpng(char *fname, int w, int h, const uint8_t *buf, char *title
     png_ptr = png_create_write_struct(PNG_LIBPNG_VER_STRING, NULL, NULL, NULL); // [!] -> png_destroy_write_struct.
     if (png_ptr == NULL) {
         fprintf(stderr, "Can not allocate a write struct.\n");
-        exit_code = -2; //TODO
+        exit_code = ERR_LIBPNG_CWS;
         goto finalize;
     }
 
@@ -54,14 +55,14 @@ int write_with_libpng(char *fname, int w, int h, const uint8_t *buf, char *title
     info_ptr = png_create_info_struct(png_ptr);
     if (info_ptr == NULL) {
         fprintf(stderr, "Can not allocate an info struct.\n");
-        exit_code = -3; //TODO
+        exit_code = ERR_LIBPNG_CIS;
         goto finalize;
     }
 
     // Exception handling.
     if (setjmp(png_jmpbuf(png_ptr))) {
         fprintf(stderr, "libpng error\n");
-        exit_code = -4; //TODO
+        exit_code = ERR_LIBPNG_SETJMP;
         goto finalize;
     }
 
@@ -76,7 +77,7 @@ int write_with_libpng(char *fname, int w, int h, const uint8_t *buf, char *title
      * width, height, bit_depth, and color_type must be the same in each call.
      */
     png_set_IHDR(png_ptr, info_ptr, w, h, 8,
-                 PNG_COLOR_TYPE_RGB, // TODO: Change to PNG_COLOR_TYPE_RGBA if the source has alpha channel.
+                 PNG_COLOR_TYPE_RGBA,
                  PNG_INTERLACE_NONE,
                  PNG_COMPRESSION_TYPE_DEFAULT,
                  PNG_FILTER_TYPE_DEFAULT);
@@ -111,18 +112,16 @@ int write_with_libpng(char *fname, int w, int h, const uint8_t *buf, char *title
     //png_set_filler(png_ptr, 0, PNG_FILLER_AFTER; // RGBX.
     //png_set_bgr(png_ptr); //BGR.
 
-    // Allocate memory for one row of pixels (3 bytes per pixel – RGB).
-    // TODO: Change to 4 if the source has alpha channel.
-    row = (png_bytep) malloc(3 * w * sizeof(png_byte)); // [!] -> free.
+    // Allocate memory for one row of pixels (4 bytes per pixel – RGBA).
+    row = (png_bytep) malloc(PIXEL_CHANNELS_COUNT * w * sizeof(png_byte)); // [!] -> free.
 
     // Write all the pixels.
     png_bytep row_pointer = row;
     int x, y, i, j;
     for (y = 0; y < h; y++) {
         for (x = 0; x < w; x++) {
-            // TODO: Add alpha channel byte if the source has it.
-            i = x * 3;
-            j = (y * w * 3) + i;
+            i = x * PIXEL_CHANNELS_COUNT;
+            j = (y * w * PIXEL_CHANNELS_COUNT) + i;
             row[i] = buf[j]; // Red.
             i++;
             j++;
@@ -130,6 +129,9 @@ int write_with_libpng(char *fname, int w, int h, const uint8_t *buf, char *title
             i++;
             j++;
             row[i] = buf[j]; // Blue.
+            i++;
+            j++;
+            row[i] = buf[j]; // Alpha channel.
         }
         png_write_row(png_ptr, row_pointer); // For some reason CLion's debugger crashes here when y=88. [WTF ?!]
     }
@@ -198,7 +200,7 @@ int writeJpegImage(char *fname, int w, int h, uint8_t *buf) {
  * @return          zero of failure
  */
 int write_with_stb(char *fname, int w, int h, uint8_t *buf) {
-    return stbi_write_png(fname, w, h, 3, buf, w * 3);
+    return stbi_write_png(fname, w, h, PIXEL_CHANNELS_COUNT, buf, w * PIXEL_CHANNELS_COUNT);
 }
 
 /*
@@ -217,7 +219,7 @@ int write_with_stb(char *fname, int w, int h, uint8_t *buf) {
 int write_image(const char *outfdp, int fn, int w, int h, uint8_t *buf, char *writer) {
     char fname[1024];
 
-    if (strcmp(writer, "png-stb") == 0) {
+    if (strcmp(writer, "stb") == 0) {
         // Write the image to a PNG file using the 'stb' library.
         // Note: This library returns 0 on failure.
         sprintf(fname, "%s\\%d.png", outfdp, fn);
