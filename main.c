@@ -14,15 +14,16 @@
  */
 errno_t main(int argc, char **argv) {
     if (argc != (APP_ARGS_COUNT + 1)) {
-        av_log(NULL, AV_LOG_ERROR, "Usage: <executable> <input_file> <pixel_format_id> <output_folder> <writer>\n");
+        av_log(NULL, AV_LOG_ERROR, "Usage: <executable> <input_file> <stream_index> <pixel_format_id> <output_folder> <writer>\n");
         return APP_EXIT_CODE_ARGS_COUNT_IS_BAD;
     }
 
     char *exe = argv[0];
     char *inf = argv[1];
-    char *pix_fmt_text = argv[2];
-    char *outfd = argv[3];
-    char *writer = argv[4];
+    char *stream_idx_text = argv[2];
+    char *pix_fmt_text = argv[3];
+    char *outfd = argv[4];
+    char *writer = argv[5];
 
     int pix_fmt_id = -1;
     errno_t err = parse_pixel_format_arg(&pix_fmt_id, pix_fmt_text);
@@ -31,8 +32,15 @@ errno_t main(int argc, char **argv) {
         return APP_EXIT_CODE_ARG_PIXEL_FORMAT_IS_BAD;
     }
 
+    int stream_index = -1;
+    err = parse_stream_index_arg(&stream_index, stream_idx_text);
+    if (err < 0) {
+        av_log(NULL, AV_LOG_ERROR, "Can not parse stream index: '%s', error code: %d.\n", stream_idx_text, err);
+        return APP_EXIT_CODE_ARG_STREAM_INDEX_IS_BAD;
+    }
+
     int frame_number = 0;
-    err = make_video_snapshots(inf, outfd, writer, &frame_number, pix_fmt_id);
+    err = make_video_snapshots(inf, outfd, writer, &frame_number, stream_index, pix_fmt_id);
     if (err < 0) {
         av_log(NULL, AV_LOG_ERROR, "Snapshot maker returned an error, error code: %d.\n", err);
         return APP_EXIT_CODE_SNAPSHOT_MAKER_ERROR;

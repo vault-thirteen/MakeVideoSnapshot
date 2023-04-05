@@ -11,11 +11,15 @@
  * save them to disk.
  *
  * If pixel format ID is negative, e.g. -1, it is ignored. If pixel format ID
- *  is >= 0, it overrides the automatically selected pixel format.
+ * is >= 0, it overrides the automatically selected pixel format.
+ *
+ * If stream index is negative, e.g. -1, it is ignored. If stream index is >= 0,
+ * it overrides the automatically selected stream index.
  *
  * @param infp          input file path
  * @param outfdp        output folder path
  * @param writer        file writer type
+ * @param si            stream index
  * @param fn            number of processed frames
  * @param pix_fmt_id    ID of a pixel format
  *
@@ -25,6 +29,7 @@ errno_t make_video_snapshots(const char *infp,
                              const char *outfp,
                              char *writer,
                              int *fn,
+                             int si,
                              int pix_fmt_id);
 
 /*

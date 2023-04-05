@@ -12,11 +12,15 @@
  * save them to disk.
  *
  * If pixel format ID is negative, e.g. -1, it is ignored. If pixel format ID
- *  is >= 0, it overrides the automatically selected pixel format.
+ * is >= 0, it overrides the automatically selected pixel format.
+ *
+ * If stream index is negative, e.g. -1, it is ignored. If stream index is >= 0,
+ * it overrides the automatically selected stream index.
  *
  * @param infp          input file path
  * @param outfdp        output folder path
  * @param writer        file writer type
+ * @param si            stream index
  * @param fn            number of processed frames
  * @param pix_fmt_id    ID of a pixel format
  *
@@ -26,6 +30,7 @@ errno_t make_video_snapshots(const char *infp,
                              const char *outfdp,
                              char *writer,
                              int *fn,
+                             int si,
                              int pix_fmt_id) {
     AVFormatContext *fmt_ctx = NULL;
     errno_t err = avformat_open_input(&fmt_ctx, infp, NULL, NULL); // [!] The stream must be closed with avformat_close_input().
@@ -41,19 +46,24 @@ errno_t make_video_snapshots(const char *infp,
         return err;
     }
 
-    int stream = av_find_best_stream(fmt_ctx, AVMEDIA_TYPE_VIDEO, -1, -1, NULL, 0); // Video stream index.
-    if (stream == AVERROR_STREAM_NOT_FOUND) {
-        av_log(NULL, AV_LOG_ERROR, "Can not find video stream, file: %s.\n", infp);
-        avformat_close_input(&fmt_ctx);
-        return (errno_t) stream;
-    } else if (stream == AVERROR_DECODER_NOT_FOUND) {
-        av_log(NULL, AV_LOG_ERROR, "Can not find decoder for video stream, file: %s.\n", infp);
-        avformat_close_input(&fmt_ctx);
-        return (errno_t) stream;
-    } else if (stream < 0) {
-        av_log(NULL, AV_LOG_ERROR, "Can not find video stream, file: %s.\n", infp);
-        avformat_close_input(&fmt_ctx);
-        return (errno_t) stream;
+    int stream = 0;
+    if (si >= 0) { // Stream index override.
+        stream = si;
+    } else {
+        stream = av_find_best_stream(fmt_ctx, AVMEDIA_TYPE_VIDEO, -1, -1, NULL, 0); // Video stream index.
+        if (stream == AVERROR_STREAM_NOT_FOUND) {
+            av_log(NULL, AV_LOG_ERROR, "Can not find video stream, file: %s.\n", infp);
+            avformat_close_input(&fmt_ctx);
+            return (errno_t) stream;
+        } else if (stream == AVERROR_DECODER_NOT_FOUND) {
+            av_log(NULL, AV_LOG_ERROR, "Can not find decoder for video stream, file: %s.\n", infp);
+            avformat_close_input(&fmt_ctx);
+            return (errno_t) stream;
+        } else if (stream < 0) {
+            av_log(NULL, AV_LOG_ERROR, "Can not find video stream, file: %s.\n", infp);
+            avformat_close_input(&fmt_ctx);
+            return (errno_t) stream;
+        }
     }
 
     AVCodecParameters *codecpar = fmt_ctx->streams[stream]->codecpar; // Codec parameters associated with the stream.
@@ -193,6 +203,10 @@ errno_t make_video_snapshots(const char *infp,
         avformat_close_input(&fmt_ctx);
         return ERR_FRAME;
     }
+
+    // Show a small summary of parameters.
+    av_log(NULL, AV_LOG_INFO, "Input File: %s.\nStream Index: %d.\nCodec Name: %s.\nSource Pixel Format: %d.\nDestination Pixel Format: %d.\nPixel Channels Count: %d.\nOutput Folder: %s.\n",
+           infp, stream, codec->name, ctx->pix_fmt, dstPixelFormat, PIXEL_CHANNELS_COUNT, outfdp);
 
     err = decode_and_process_frames(outfdp, fn, buf, buf_size, fmt_ctx, stream, ctx, conv_ctx, rgb_dst, rgb_dstStride, rgb_buf, pkt, fr, writer);
     if (err < 0) {
