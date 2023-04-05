@@ -1,29 +1,34 @@
 #include "image.h"
+#include "mvs.h"
 #include "snapshot.h"
-
+#include "std.h"
 #include "libavcodec/avcodec.h"
 #include "libavformat/avformat.h"
 #include "libavutil/imgutils.h"
 #include "libswscale/swscale.h"
-#include "mvs.h"
 
 /*
  * Decode the best video stream from the file, make snapshot images,
  * save them to disk.
  *
- * @param infp      input file path
- * @param outfdp    output folder path
- * @param writer    file writer type
- * @param fn        number of processed frames
+ * If pixel format ID is negative, e.g. -1, it is ignored. If pixel format ID
+ *  is >= 0, it overrides the automatically selected pixel format.
  *
- * @return          negative error code in case of failure, otherwise >= 0.
+ * @param infp          input file path
+ * @param outfdp        output folder path
+ * @param writer        file writer type
+ * @param fn            number of processed frames
+ * @param pix_fmt_id    ID of a pixel format
+ *
+ * @return              negative error code in case of failure, otherwise >= 0.
  */
-int make_video_snapshots(const char *infp,
-                         const char *outfdp,
-                         char *writer,
-                         int *fn) {
+errno_t make_video_snapshots(const char *infp,
+                             const char *outfdp,
+                             char *writer,
+                             int *fn,
+                             int pix_fmt_id) {
     AVFormatContext *fmt_ctx = NULL;
-    int err = avformat_open_input(&fmt_ctx, infp, NULL, NULL); // [!] The stream must be closed with avformat_close_input().
+    errno_t err = avformat_open_input(&fmt_ctx, infp, NULL, NULL); // [!] The stream must be closed with avformat_close_input().
     if (err < 0) {
         av_log(NULL, AV_LOG_ERROR, "Can not open the file: %s.\n", infp);
         return err;
@@ -40,15 +45,15 @@ int make_video_snapshots(const char *infp,
     if (stream == AVERROR_STREAM_NOT_FOUND) {
         av_log(NULL, AV_LOG_ERROR, "Can not find video stream, file: %s.\n", infp);
         avformat_close_input(&fmt_ctx);
-        return stream;
+        return (errno_t) stream;
     } else if (stream == AVERROR_DECODER_NOT_FOUND) {
         av_log(NULL, AV_LOG_ERROR, "Can not find decoder for video stream, file: %s.\n", infp);
         avformat_close_input(&fmt_ctx);
-        return stream;
+        return (errno_t) stream;
     } else if (stream < 0) {
         av_log(NULL, AV_LOG_ERROR, "Can not find video stream, file: %s.\n", infp);
         avformat_close_input(&fmt_ctx);
-        return stream;
+        return (errno_t) stream;
     }
 
     AVCodecParameters *codecpar = fmt_ctx->streams[stream]->codecpar; // Codec parameters associated with the stream.
@@ -61,7 +66,7 @@ int make_video_snapshots(const char *infp,
     // FFmpeg tool uses a default decoder for WebM video. The default
     // decoder does not recognize YUVA420p format and sees it as YUV420p.
     // Even if the pixel format is set manually like so:
-    //      ctx->pix_fmt = AV_PIX_FMT_YUVA420P;
+    //      ctx->pix_fmt = AV_PIX_FMT_YUVA420P; // AV_PIX_FMT_YUVA420P = 33.
     // the decoder is unable to see the alpha channel. This is disgusting.
     // https://stackoverflow.com/questions/66702932/is-there-a-way-to-force-ffmpeg-to-decode-a-video-stream-with-alpha-from-a-webm
     /* Luckily, there is a dirty hack to set the decoder manually. :\ */
@@ -92,15 +97,13 @@ int make_video_snapshots(const char *infp,
         return err;
     }
 
-    // Another ugly hack of the stupid FFmpeg. Reason: See above.
-    /* TODO: What will happen when a real AV_PIX_FMT_YUV420P comes ??? ... :\ */
-    if (codecpar->codec_id == AV_CODEC_ID_VP9) {
-        if (strcmp(codec->name, CODEC_LIBVPX_VP9) == 0) {
-            if (ctx->pix_fmt == AV_PIX_FMT_YUV420P) {
-                ctx->pix_fmt = AV_PIX_FMT_YUVA420P;
-            }
-        }
+    // Unfortunately, libvpx decoder sees pixel format incorrectly too.
+    // Here we provide a method to override the automatically selected pixel
+    //  format. FFmpeg library is disgusting.
+    if (pix_fmt_id >= 0) {
+        ctx->pix_fmt = pix_fmt_id;
     }
+    av_log(NULL, AV_LOG_INFO, "Using pixel format ID: %d.\n", ctx->pix_fmt);
 
     err = avcodec_open2(ctx, codec, NULL);
     if (err < 0) {
@@ -126,8 +129,8 @@ int make_video_snapshots(const char *infp,
         return ERR_BUFFER;
     }
 
+    // Settings of the output image.
     enum AVPixelFormat dstPixelFormat = AV_PIX_FMT_RGBA;    // RGBA 8:8:8:8, 32bpp, RGBA RGBA ...
-    //enum AVPixelFormat dstPixelFormat = AV_PIX_FMT_RGB24; // RGB 8:8:8, 24bpp, RGB RGB ...
     int rgb_buf_size = av_image_get_buffer_size(dstPixelFormat, ctx->width, ctx->height, 32);
     if (rgb_buf_size < 0) {
         av_log(NULL, AV_LOG_ERROR, "Can not get image buffer size, file: %s.\n", infp);
@@ -188,7 +191,7 @@ int make_video_snapshots(const char *infp,
         av_free(buf);
         avcodec_free_context(&ctx);
         avformat_close_input(&fmt_ctx);
-        return err;
+        return ERR_FRAME;
     }
 
     err = decode_and_process_frames(outfdp, fn, buf, buf_size, fmt_ctx, stream, ctx, conv_ctx, rgb_dst, rgb_dstStride, rgb_buf, pkt, fr, writer);
@@ -208,7 +211,7 @@ int make_video_snapshots(const char *infp,
     av_free(buf);
     avcodec_free_context(&ctx);
     avformat_close_input(&fmt_ctx);
-    return 0;
+    return SUCCESS;
 }
 
 /*
@@ -223,22 +226,22 @@ int make_video_snapshots(const char *infp,
  *
  * @return          negative error code in case of failure.
  */
-int decode_and_process_frames(const char *outfdp,
-                              int *fn,
-                              uint8_t *buf,
-                              int buf_size,
-                              AVFormatContext *fmt_ctx,
-                              int stream,
-                              AVCodecContext *ctx,
-                              struct SwsContext *conv_ctx,
-                              uint8_t *const rgb_dst[1],
-                              const int rgb_dstStride[1],
-                              uint8_t *rgb_buf,
-                              AVPacket *pkt,
-                              AVFrame *fr,
-                              char *writer) {
+errno_t decode_and_process_frames(const char *outfdp,
+                                  int *fn,
+                                  uint8_t *buf,
+                                  int buf_size,
+                                  AVFormatContext *fmt_ctx,
+                                  int stream,
+                                  AVCodecContext *ctx,
+                                  struct SwsContext *conv_ctx,
+                                  uint8_t *const rgb_dst[1],
+                                  const int rgb_dstStride[1],
+                                  uint8_t *rgb_buf,
+                                  AVPacket *pkt,
+                                  AVFrame *fr,
+                                  char *writer) {
     // Read frames and process them.
-    int err = 0;
+    errno_t err = 0;
     while (1) {
         // Read a frame.
         err = av_read_frame(fmt_ctx, pkt); // [!] The packet must be freed with av_packet_unref() when it is no longer needed.
@@ -312,7 +315,7 @@ int decode_and_process_frames(const char *outfdp,
     }
 
     avcodec_flush_buffers(ctx);
-    return 0;
+    return SUCCESS;
 }
 
 /*
@@ -324,19 +327,20 @@ int decode_and_process_frames(const char *outfdp,
  *
  * @return          negative error code in case of failure, otherwise >= 0.
  */
-int process_decoded_frames(AVCodecContext *ctx,
-                           AVFrame *fr,
-                           uint8_t *buf,
-                           int buf_size,
-                           struct SwsContext *conv_ctx,
-                           uint8_t *const rgb_dst[1],
-                           const int rgb_dstStride[1],
-                           uint8_t *rgb_buf,
-                           const char *outfdp,
-                           int *fn,
-                           char *writer) {
+errno_t process_decoded_frames(AVCodecContext *ctx,
+                               AVFrame *fr,
+                               uint8_t *buf,
+                               int buf_size,
+                               struct SwsContext *conv_ctx,
+                               uint8_t *const rgb_dst[1],
+                               const int rgb_dstStride[1],
+                               uint8_t *rgb_buf,
+                               const char *outfdp,
+                               int *fn,
+                               char *writer) {
+    errno_t err = 0;
     while (1) {
-        int err = avcodec_receive_frame(ctx, fr); // [!] It always calls av_frame_unref(frame) before doing anything else.
+        err = avcodec_receive_frame(ctx, fr); // [!] It always calls av_frame_unref(frame) before doing anything else.
         if (err < 0) {
             return err;
         }
@@ -353,7 +357,7 @@ int process_decoded_frames(AVCodecContext *ctx,
         if (cwb < 0) {
             av_log(NULL, AV_LOG_ERROR, "Can not copy image to buffer, frame number: %d.\n", *fn);
             av_frame_unref(fr);
-            return cwb;
+            return (errno_t) cwb;
         }
 
 //            printf("%d, %s, %s, %8"PRId64", %8d, 0x%08lx, %dx%d\n", stream,

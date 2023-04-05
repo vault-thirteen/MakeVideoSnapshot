@@ -1,10 +1,11 @@
 #include <stdio.h>
-
 #include "libavutil/adler32.h"
 #include "libpng/png.h"
 #include "libjpeg/jpeglib.h"
 #include "zlib/zlib.h"
+#include "image.h"
 #include "mvs.h"
+#include "std.h"
 
 #ifndef STB_IMAGE_WRITE_IMPLEMENTATION
 #define STB_IMAGE_WRITE_IMPLEMENTATION
@@ -28,8 +29,8 @@
  *
  * @return          negative error code in case of failure, otherwise >= 0.
  */
-int write_with_libpng(char *fname, int w, int h, const uint8_t *buf, char *title) {
-    int exit_code = 0;
+errno_t write_with_libpng(char *fname, int w, int h, const uint8_t *buf, char *title) {
+    errno_t exit_code = SUCCESS;
     png_structp png_ptr = NULL;
     png_infop info_ptr = NULL;
     png_bytep row = NULL;
@@ -147,10 +148,10 @@ int write_with_libpng(char *fname, int w, int h, const uint8_t *buf, char *title
     return exit_code;
 }
 
+//TODO
 // writeJpegImage writes an image to disk in JPEG format using the 'libjpeg'
 // library. Returns zero on success.
-int writeJpegImage(char *fname, int w, int h, uint8_t *buf) {
-    //TODO
+errno_t writeJpegImage(char *fname, int w, int h, uint8_t *buf) {
     int quality = 100;
     struct jpeg_compress_struct cinfo;
     struct jpeg_error_mgr jerr;
@@ -199,7 +200,7 @@ int writeJpegImage(char *fname, int w, int h, uint8_t *buf) {
  *
  * @return          zero of failure
  */
-int write_with_stb(char *fname, int w, int h, uint8_t *buf) {
+errno_t write_with_stb(char *fname, int w, int h, uint8_t *buf) {
     return stbi_write_png(fname, w, h, PIXEL_CHANNELS_COUNT, buf, w * PIXEL_CHANNELS_COUNT);
 }
 
@@ -216,41 +217,41 @@ int write_with_stb(char *fname, int w, int h, uint8_t *buf) {
  *
  * @return          negative error code in case of failure, otherwise >= 0.
  */
-int write_image(const char *outfdp, int fn, int w, int h, uint8_t *buf, char *writer) {
+errno_t write_image(const char *outfdp, int fn, int w, int h, uint8_t *buf, char *writer) {
     char fname[1024];
 
-    if (strcmp(writer, "stb") == 0) {
+    if (strcmp(writer, WRITER_LIBPNG) == 0) {
+        // Write the image to a PNG file using the 'libpng'.
+        // Note: This library returns 0 on success.
+        sprintf(fname, "%s\\%d.png", outfdp, fn);
+        int res = write_with_libpng(fname, w, h, buf, "image"); //TODO:Title.
+        if (res != 0) {
+            return ERR_ENCODE;
+        }
+        return SUCCESS;
+    }
+
+    if (strcmp(writer, WRITER_STB) == 0) {
         // Write the image to a PNG file using the 'stb' library.
         // Note: This library returns 0 on failure.
         sprintf(fname, "%s\\%d.png", outfdp, fn);
         int res = write_with_stb(fname, w, h, buf);
         if (res == 0) {
-            return -1;//TODO
+            return ERR_ENCODE;
         }
-        return 0;
+        return SUCCESS;
     }
 
-    if (strcmp(writer, "libpng") == 0) {
-        // Write the image to a PNG file using the 'libpng'.
-        // Note: This library returns 0 on success.
-        sprintf(fname, "%s\\%d.png", outfdp, fn);
-        int res = write_with_libpng(fname, w, h, buf, "image");
-        if (res != 0) {
-            return -1;//TODO
-        }
-        return 0;
-    }
-
-    if (strcmp(writer, "libjpeg") == 0) {
+    if (strcmp(writer, WRITER_LIBJPEG) == 0) {
         // Write the image to a JPEG file using the 'libjpeg'.
         // Note: This library returns 0 on success.
         sprintf(fname, "%s\\%d.jpg", outfdp, fn);
         int res = writeJpegImage(fname, w, h, buf);
         if (res != 0) {
-            return -1;//TODO
+            return ERR_ENCODE;
         }
-        return 0;
+        return SUCCESS;
     }
 
-    return -2;//TODO
+    return ERR_UNKNOWN_WRITER;
 }
