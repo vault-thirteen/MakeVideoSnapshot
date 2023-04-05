@@ -113,15 +113,15 @@ errno_t write_with_libpng(const char *fname, int w, int h, const uint8_t *buf, c
     //png_set_bgr(png_ptr); //BGR.
 
     // Allocate memory for one row of pixels (4 bytes per pixel – RGBA).
-    row = (png_bytep) malloc(PIXEL_CHANNELS_COUNT * w * sizeof(png_byte)); // [!] -> free.
+    row = (png_bytep) malloc(PIXEL_CHANNELS_COUNT_RGBA * w * sizeof(png_byte)); // [!] -> free.
 
     // Write all the pixels.
     png_bytep row_pointer = row;
     int x, y, i, j;
     for (y = 0; y < h; y++) {
         for (x = 0; x < w; x++) {
-            i = x * PIXEL_CHANNELS_COUNT;
-            j = (y * w * PIXEL_CHANNELS_COUNT) + i;
+            i = x * PIXEL_CHANNELS_COUNT_RGBA;
+            j = (y * w * PIXEL_CHANNELS_COUNT_RGBA) + i;
             row[i] = buf[j]; // Red.
             i++;
             j++;
@@ -207,7 +207,7 @@ errno_t write_with_libjpeg(const char *fname, int w, int h, uint8_t *buf) {
  * @return          zero of failure
  */
 errno_t write_with_stb(const char *fname, int w, int h, uint8_t *buf) {
-    return stbi_write_png(fname, w, h, PIXEL_CHANNELS_COUNT, buf, w * PIXEL_CHANNELS_COUNT);
+    return stbi_write_png(fname, w, h, PIXEL_CHANNELS_COUNT_RGBA, buf, w * PIXEL_CHANNELS_COUNT_RGBA);
 }
 
 /*

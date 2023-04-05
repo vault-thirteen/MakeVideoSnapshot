@@ -140,8 +140,31 @@ errno_t make_video_snapshots(const char *infp,
     }
 
     // Settings of the output image.
-    enum AVPixelFormat dstPixelFormat = AV_PIX_FMT_RGBA;    // RGBA 8:8:8:8, 32bpp, RGBA RGBA ...
-    int rgb_buf_size = av_image_get_buffer_size(dstPixelFormat, ctx->width, ctx->height, 32);
+    enum AVPixelFormat dstPixelFormat;  // Pixel format.
+    int linesize_alignment = 0;         // Line size alignment.
+    int pixel_channels_count = 0;       // Number of channels in pixel: RGB or RGBA.
+
+    if (strcmp(writer, WRITER_LIBPNG) == 0) {
+        dstPixelFormat = AV_PIX_FMT_RGBA;    // RGBA 8:8:8:8, 32bpp, RGBA RGBA ...
+        linesize_alignment = 32;
+        pixel_channels_count = PIXEL_CHANNELS_COUNT_RGBA;
+    } else if (strcmp(writer, WRITER_STB) == 0) {
+        dstPixelFormat = AV_PIX_FMT_RGBA;    // RGBA 8:8:8:8, 32bpp, RGBA RGBA ...
+        linesize_alignment = 32;
+        pixel_channels_count = PIXEL_CHANNELS_COUNT_RGBA;
+    } else if (strcmp(writer, WRITER_LIBJPEG) == 0) {
+        dstPixelFormat = AV_PIX_FMT_RGB24;   // RGB 8:8:8, 24bpp, RGB RGB ...
+        linesize_alignment = 24;
+        pixel_channels_count = PIXEL_CHANNELS_COUNT_RGB;
+    } else {
+        av_log(NULL, AV_LOG_ERROR, "Unsupported image writer: %s.\n", writer);
+        av_free(buf);
+        avcodec_free_context(&ctx);
+        avformat_close_input(&fmt_ctx);
+        return ERR_UNKNOWN_WRITER;
+    }
+
+    int rgb_buf_size = av_image_get_buffer_size(dstPixelFormat, ctx->width, ctx->height, linesize_alignment);
     if (rgb_buf_size < 0) {
         av_log(NULL, AV_LOG_ERROR, "Can not get image buffer size, file: %s.\n", infp);
         av_free(buf);
@@ -160,7 +183,7 @@ errno_t make_video_snapshots(const char *infp,
     }
 
     uint8_t *const rgb_dst[1] = {rgb_buf};
-    const int rgb_dstStride[1] = {ctx->width * PIXEL_CHANNELS_COUNT}; // RGBA.
+    const int rgb_dstStride[1] = {ctx->width * pixel_channels_count};
 
     struct SwsContext *conv_ctx = sws_getContext(
             ctx->width,
@@ -205,8 +228,9 @@ errno_t make_video_snapshots(const char *infp,
     }
 
     // Show a small summary of parameters.
-    av_log(NULL, AV_LOG_INFO, "Input File: %s.\nStream Index: %d.\nCodec Name: %s.\nSource Pixel Format: %d.\nDestination Pixel Format: %d.\nPixel Channels Count: %d.\nOutput Folder: %s.\n",
-           infp, stream, codec->name, ctx->pix_fmt, dstPixelFormat, PIXEL_CHANNELS_COUNT, outfdp);
+    av_log(NULL, AV_LOG_INFO,
+           "Input File: %s.\nStream Index: %d.\nCodec Name: %s.\nSource Pixel Format: %d.\nDestination Pixel Format: %d.\nPixel Channels Count: %d.\nOutput Folder: %s.\nWriter: %s.\n",
+           infp, stream, codec->name, ctx->pix_fmt, dstPixelFormat, pixel_channels_count, outfdp, writer);
 
     err = decode_and_process_frames(outfdp, fn, buf, buf_size, fmt_ctx, stream, ctx, conv_ctx, rgb_dst, rgb_dstStride, rgb_buf, pkt, fr, writer);
     if (err < 0) {

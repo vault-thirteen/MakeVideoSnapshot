@@ -18,7 +18,8 @@
 #define ERR_LIBPNG_CIS (-270)
 #define ERR_LIBPNG_SETJMP (-271)
 
-#define PIXEL_CHANNELS_COUNT 4 // RGBA.
+#define PIXEL_CHANNELS_COUNT_RGB 3 // RGB.
+#define PIXEL_CHANNELS_COUNT_RGBA 4 // RGBA.
 
 #define CODEC_LIBVPX_VP9 "libvpx-vp9"
 
