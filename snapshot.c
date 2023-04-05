@@ -58,8 +58,19 @@ int make_video_snapshots(const char *infp,
         return ERR_CODEC_PARAMETER;
     }
 
-    //TODO: avcodec_find_decoder_by_name ...
-    const AVCodec *codec = avcodec_find_decoder(codecpar->codec_id);
+    // FFmpeg tool uses a default decoder for WebM video. The default
+    // decoder does not recognize YUVA420p format and sees it as YUV420p.
+    // Even if the pixel format is set manually like so:
+    //      ctx->pix_fmt = AV_PIX_FMT_YUVA420P;
+    // the decoder is unable to see the alpha channel. This is disgusting.
+    // https://stackoverflow.com/questions/66702932/is-there-a-way-to-force-ffmpeg-to-decode-a-video-stream-with-alpha-from-a-webm
+    /* Luckily, there is a dirty hack to set the decoder manually. :\ */
+    const AVCodec *codec = NULL;
+    if (codecpar->codec_id == AV_CODEC_ID_VP9) {
+        codec = avcodec_find_decoder_by_name(CODEC_LIBVPX_VP9);
+    } else {
+        codec = avcodec_find_decoder(codecpar->codec_id);
+    }
     if (codec == NULL) {
         av_log(NULL, AV_LOG_ERROR, "Can not find a decoder, file: %s.\n", infp);
         avformat_close_input(&fmt_ctx);
@@ -79,6 +90,16 @@ int make_video_snapshots(const char *infp,
         avcodec_free_context(&ctx);
         avformat_close_input(&fmt_ctx);
         return err;
+    }
+
+    // Another ugly hack of the stupid FFmpeg. Reason: See above.
+    /* TODO: What will happen when a real AV_PIX_FMT_YUV420P comes ??? ... :\ */
+    if (codecpar->codec_id == AV_CODEC_ID_VP9) {
+        if (strcmp(codec->name, CODEC_LIBVPX_VP9) == 0) {
+            if (ctx->pix_fmt == AV_PIX_FMT_YUV420P) {
+                ctx->pix_fmt = AV_PIX_FMT_YUVA420P;
+            }
+        }
     }
 
     err = avcodec_open2(ctx, codec, NULL);
@@ -169,15 +190,6 @@ int make_video_snapshots(const char *infp,
         avformat_close_input(&fmt_ctx);
         return err;
     }
-
-    // FFmpeg library uses a default decoder for WebM video. The default
-    // decoder does not recognize YUVA420p format and sees it as YUV420p.
-    // Even if I set the pixel format manually like so:
-    //      ctx->pix_fmt = AV_PIX_FMT_YUVA420P;
-    // the decoder is unable to see the alpha channel. This is disgusting.
-    // https://stackoverflow.com/questions/66702932/is-there-a-way-to-force-ffmpeg-to-decode-a-video-stream-with-alpha-from-a-webm
-    // There is a dirty trick to set the decoder manually. :\
-    //TODO
 
     err = decode_and_process_frames(outfdp, fn, buf, buf_size, fmt_ctx, stream, ctx, conv_ctx, rgb_dst, rgb_dstStride, rgb_buf, pkt, fr, writer);
     if (err < 0) {

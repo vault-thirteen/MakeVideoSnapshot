@@ -19,4 +19,6 @@
 
 #define PIXEL_CHANNELS_COUNT 4 // RGBA.
 
+#define CODEC_LIBVPX_VP9 "libvpx-vp9"
+
 #endif //MAKEVIDEOSNAPSHOT_MVS_H
