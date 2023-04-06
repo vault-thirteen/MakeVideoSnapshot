@@ -75,3 +75,7 @@ video stream of the file.
         * Install MinGW, including its version of the `make` tool,
         * Add MinGW's `bin` folder to your system's `PATH` environment variable.
 * Build the project.
+
+## Installing
+
+TODO
