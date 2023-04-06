@@ -31,9 +31,9 @@ video stream of the file.
     * They should be located in the `ffmpeg` folder.
 
 
-* Get the `sdb` library.
-    * https://github.com/nothings/stb
-    * Or use the provided `get-stb.bat` script.
+* Get the `libjpeg` library.
+    * https://ijg.org/
+    * Or use the provided `get-libjpeg.bat` script.
 
 
 * Get the `libpng` library.
@@ -41,9 +41,14 @@ video stream of the file.
     * Or use the provided `get-libpng.bat` script.
 
 
-* Get the `libjpeg` library.
-    * https://ijg.org/
-    * Or use the provided `get-libjpeg.bat` script.
+* Get the `sdb` library.
+    * https://github.com/nothings/stb
+    * Or use the provided `get-stb.bat` script.
+
+
+* Get the `zlib` library.
+    * https://www.zlib.net/
+    * Or use the provided `get-zlib.bat` script.
 
 
 * Build the project using Visual Studio directly or via CLion.  
