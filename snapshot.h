@@ -16,12 +16,16 @@
  * If stream index is negative, e.g. -1, it is ignored. If stream index is >= 0,
  * it overrides the automatically selected stream index.
  *
+ * If 'N-th' parameter is 0, all frames will be saved. If it is >0, every N-th
+ * frame will be saved and the first frame too.
+ *
  * @param infp          input file path
  * @param outfdp        output folder path
  * @param writer        file writer type
  * @param si            stream index
  * @param fn            number of processed frames
  * @param pix_fmt_id    ID of a pixel format
+ * @param nth           N-th frame to save
  *
  * @return              negative error code in case of failure, otherwise >= 0.
  */
@@ -30,7 +34,8 @@ errno_t make_video_snapshots(const char *infp,
                              char *writer,
                              int *fn,
                              int si,
-                             int pix_fmt_id);
+                             int pix_fmt_id,
+                             int nth);
 
 /*
  * Read frames, decode them, save images to disk.
@@ -41,6 +46,7 @@ errno_t make_video_snapshots(const char *infp,
  * @param outfdp    output folder path
  * @param fn        number of processed frames
  * @param writer    file writer type
+ * @param nth       N-th frame to save
  *
  * @return          negative error code in case of failure.
  */
@@ -57,7 +63,8 @@ errno_t decode_and_process_frames(const char *outfdp,
                                   uint8_t *rgb_buf,
                                   AVPacket *pkt,
                                   AVFrame *fr,
-                                  char *writer);
+                                  char *writer,
+                                  int nth);
 
 /*
  * Receive available decoded frames from the decoder, save them to disk.
@@ -65,6 +72,7 @@ errno_t decode_and_process_frames(const char *outfdp,
  * @param outfdp    output folder path
  * @param fn        current frame number
  * @param writer    file writer type
+ * @param nth       N-th frame to save
  *
  * @return          negative error code in case of failure, otherwise >= 0.
  */
@@ -78,6 +86,7 @@ errno_t process_decoded_frames(AVCodecContext *ctx,
                                uint8_t *rgb_buf,
                                const char *outfdp,
                                int *fn,
-                               char *writer);
+                               char *writer,
+                               int nth);
 
 #endif //INC_SnapshotMaker_SNAPSHOT_H
