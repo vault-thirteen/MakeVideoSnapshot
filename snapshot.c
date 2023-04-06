@@ -23,14 +23,13 @@
  *
  * @return              negative error code in case of failure, otherwise >= 0.
  */
-errno_t prepare_decoder_normal(
-        AVFormatContext **fmt_ctx,  // Output parameter.
-        AVCodec **codec,            // Output parameter.
-        AVCodecContext **ctx,       // Output parameter.
-        int *stream,                // Output parameter.
-        const char *infp,           // Input parameter.
-        int si,                     // Input parameter.
-        int pix_fmt_id)             // Input parameter.
+errno_t prepare_decoder_normal(AVFormatContext **fmt_ctx,  // Output parameter.
+                               AVCodec **codec,            // Output parameter.
+                               AVCodecContext **ctx,       // Output parameter.
+                               int *stream,                // Output parameter.
+                               const char *infp,           // Input parameter.
+                               int si,                     // Input parameter.
+                               int pix_fmt_id)             // Input parameter.
 {
     *fmt_ctx = avformat_alloc_context(); // [!] -> avformat_free_context().
 
