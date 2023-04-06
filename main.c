@@ -1,5 +1,3 @@
-#include <stdlib.h>
-#include "cli.h"
 #include "main.h"
 #include "snapshot.h"
 #include "std.h"
@@ -19,7 +17,7 @@ errno_t main(int argc, char **argv) {
         return APP_EXIT_CODE_ARGS_COUNT_IS_BAD;
     }
 
-    char *exe = argv[0];
+    //char *exe = argv[0];
     char *inf = argv[1];                // Input file.
     char *stream_idx_text = argv[2];    // Video stream index.
     char *pix_fmt_text = argv[3];       // Input pixel format.
@@ -28,14 +26,14 @@ errno_t main(int argc, char **argv) {
     char *nth_text = argv[6];           // N-th frame to save. If 0, all frames will be saved.
 
     int pix_fmt_id = -1;
-    errno_t err = parse_pixel_format_arg(&pix_fmt_id, pix_fmt_text);
+    errno_t err = parse_int(&pix_fmt_id, pix_fmt_text, 10);
     if (err < 0) {
         av_log(NULL, AV_LOG_ERROR, "Can not parse pixel format: '%s', error code: %d.\n", pix_fmt_text, err);
         return APP_EXIT_CODE_ARG_PIXEL_FORMAT_IS_BAD;
     }
 
     int stream_index = -1;
-    err = parse_stream_index_arg(&stream_index, stream_idx_text);
+    err = parse_int(&stream_index, stream_idx_text, 10);
     if (err < 0) {
         av_log(NULL, AV_LOG_ERROR, "Can not parse stream index: '%s', error code: %d.\n", stream_idx_text, err);
         return APP_EXIT_CODE_ARG_STREAM_INDEX_IS_BAD;
