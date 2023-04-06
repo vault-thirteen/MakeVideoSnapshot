@@ -8,14 +8,228 @@
 #include "libswscale/swscale.h"
 
 /*
- * Decode the best video stream from the file, make snapshot images,
- * save them to disk.
+ * Prepares objects for decoding the video.
+ * This method uses a usual approach.
+ *
+ * If stream index is negative, e.g. -1, it is ignored. If stream index is >= 0,
+ * it overrides the automatically selected stream index.
  *
  * If pixel format ID is negative, e.g. -1, it is ignored. If pixel format ID
  * is >= 0, it overrides the automatically selected pixel format.
  *
+ * @param infp          input file path
+ * @param si            stream index (override)
+ * @param pix_fmt_id    ID of a pixel format (override)
+ *
+ * @return              negative error code in case of failure, otherwise >= 0.
+ */
+errno_t prepare_decoder_normal(
+        AVFormatContext **fmt_ctx,  // Output parameter.
+        AVCodec **codec,            // Output parameter.
+        AVCodecContext **ctx,       // Output parameter.
+        int *stream,                // Output parameter.
+        const char *infp,           // Input parameter.
+        int si,                     // Input parameter.
+        int pix_fmt_id)             // Input parameter.
+{
+    *fmt_ctx = avformat_alloc_context(); // [!] -> avformat_free_context().
+
+    errno_t err = avformat_open_input(fmt_ctx, infp, NULL, NULL); // [!] The stream must be closed with avformat_close_input().
+    // 'avformat_close_input' covers the 'avformat_free_context', so only 'avformat_close_input' should be used.
+    if (err < 0) {
+        av_log(NULL, AV_LOG_ERROR, "Can not open the file: %s.\n", infp);
+        avformat_free_context(*fmt_ctx);
+        return err;
+    }
+
+    err = avformat_find_stream_info(*fmt_ctx, NULL);
+    if (err < 0) {
+        av_log(NULL, AV_LOG_ERROR, "Can not get the stream, file: %s.\n", infp);
+        avformat_close_input(fmt_ctx);
+        return err;
+    }
+
+    if (si >= 0) { // Stream index override.
+        *stream = si;
+        av_log(NULL, AV_LOG_INFO, "Overriding stream index with: %d.\n", si);
+    } else {
+        *stream = av_find_best_stream(*fmt_ctx, AVMEDIA_TYPE_VIDEO, -1, -1, NULL, 0); // Video stream index.
+        if (*stream == AVERROR_STREAM_NOT_FOUND) {
+            av_log(NULL, AV_LOG_ERROR, "Can not find video stream, file: %s.\n", infp);
+            avformat_close_input(fmt_ctx);
+            return (errno_t) (*stream);
+        } else if (*stream == AVERROR_DECODER_NOT_FOUND) {
+            av_log(NULL, AV_LOG_ERROR, "Can not find decoder for video stream, file: %s.\n", infp);
+            avformat_close_input(fmt_ctx);
+            return (errno_t) (*stream);
+        } else if (*stream < 0) {
+            av_log(NULL, AV_LOG_ERROR, "Can not find video stream, file: %s.\n", infp);
+            avformat_close_input(fmt_ctx);
+            return (errno_t) (*stream);
+        }
+    }
+
+    AVCodecParameters *codecpar = (*fmt_ctx)->streams[*stream]->codecpar; // Codec parameters associated with the stream.
+    if (codecpar == NULL) {
+        av_log(NULL, AV_LOG_ERROR, "Can not find codec parameters, file: %s.\n", infp);
+        avformat_close_input(fmt_ctx);
+        return ERR_CODEC_PARAMETER;
+    }
+
+    // FFmpeg tool uses a default decoder for WebM video. The default
+    // decoder does not recognize YUVA420p format and sees it as YUV420p.
+    // Even if the pixel format is set manually like so:
+    //      ctx->pix_fmt = AV_PIX_FMT_YUVA420P; // AV_PIX_FMT_YUVA420P = 33.
+    // the decoder is unable to see the alpha channel. This is disgusting.
+    // https://stackoverflow.com/questions/66702932/is-there-a-way-to-force-ffmpeg-to-decode-a-video-stream-with-alpha-from-a-webm
+    /* Luckily, there is a dirty hack to set the decoder manually. :\ */
+    // https://stackoverflow.com/questions/75940195/ffmpeg-library-is-detecting-pixel-format-of-vp9-video-stream-not-correctly
+    if (codecpar->codec_id == AV_CODEC_ID_VP9) {
+        // VP9 requires a non-standard approach for decoding.
+        avformat_close_input(fmt_ctx);
+        return prepare_decoder_vp9(fmt_ctx, codec, ctx, infp, pix_fmt_id, *stream);
+    } else {
+        *codec = (AVCodec *) avcodec_find_decoder(codecpar->codec_id);
+    }
+    if (codec == NULL) {
+        av_log(NULL, AV_LOG_ERROR, "Can not find a decoder, file: %s.\n", infp);
+        avformat_close_input(fmt_ctx);
+        return ERR_CODEC;
+    }
+
+    *ctx = avcodec_alloc_context3(*codec); // [!] The resulting struct should be freed with avcodec_free_context().
+    if (ctx == NULL) {
+        av_log(NULL, AV_LOG_ERROR, "Can not allocate decoder context, file: %s.\n", infp);
+        avformat_close_input(fmt_ctx);
+        return ERR_CODEC_CONTEXT;
+    }
+
+    err = avcodec_parameters_to_context(*ctx, codecpar);
+    if (err < 0) {
+        av_log(NULL, AV_LOG_ERROR, "Can not copy decoder context, file: %s.\n", infp);
+        avcodec_free_context(ctx);
+        avformat_close_input(fmt_ctx);
+        return err;
+    }
+
+    // Unfortunately, FFmpeg library may see a pixel format incorrectly.
+    // Here we provide a method to override the automatically selected pixel
+    // format.
+    if (pix_fmt_id >= 0) {
+        (*ctx)->pix_fmt = pix_fmt_id;
+        av_log(NULL, AV_LOG_INFO, "Overriding pixel format ID with: %d.\n", pix_fmt_id);
+    }
+
+    err = avcodec_open2(*ctx, *codec, NULL);
+    if (err < 0) {
+        av_log(ctx, AV_LOG_ERROR, "Can not open decoder, file: %s.\n", infp);
+        avcodec_free_context(ctx);
+        avformat_close_input(fmt_ctx);
+        return err;
+    }
+
+    return SUCCESS;
+}
+
+/*
+ * Prepares objects for decoding the video.
+ * This method uses a special approach for VP9 format.
+ *
+ * This method is a modified version of the original 'prepare_decoder_normal'.
+ * It is needed to avoid all the madness of the VP9 decoding with FFmpeg.
+ * https://stackoverflow.com/questions/75940195/
+ *
+ * If pixel format ID is negative, e.g. -1, it is ignored. If pixel format ID
+ * is >= 0, it overrides the automatically selected pixel format.
+ *
+ * @param infp          input file path
+ * @param pix_fmt_id    ID of a pixel format (override)
+ * @param stream        index of a stream to decode
+ *
+ * @return              negative error code in case of failure, otherwise >= 0.
+ */
+errno_t prepare_decoder_vp9(AVFormatContext **fmt_ctx,  // Output parameter.
+                            AVCodec **codec,            // Output parameter.
+                            AVCodecContext **ctx,       // Output parameter.
+                            const char *infp,           // Input parameter.
+                            int pix_fmt_id,             // Input parameter.
+                            int stream)                 // Input parameter.
+{
+    *fmt_ctx = avformat_alloc_context(); // [!] -> avformat_free_context().
+
+    *codec = (AVCodec *) avcodec_find_decoder_by_name(CODEC_LIBVPX_VP9);
+    if (codec == NULL) {
+        av_log(NULL, AV_LOG_ERROR, "Can not find a decoder, file: %s.\n", infp);
+        avformat_free_context(*fmt_ctx);
+        return ERR_CODEC;
+    }
+    (*fmt_ctx)->video_codec = *codec;
+
+    int err = avformat_open_input(fmt_ctx, infp, NULL, NULL); // [!] The stream must be closed with avformat_close_input().
+    // 'avformat_close_input' covers the 'avformat_free_context', so only 'avformat_close_input' should be used.
+    if (err < 0) {
+        av_log(NULL, AV_LOG_ERROR, "Can not open the file: %s.\n", infp);
+        avformat_free_context(*fmt_ctx);
+        return err;
+    }
+
+    err = avformat_find_stream_info(*fmt_ctx, NULL);
+    if (err < 0) {
+        av_log(NULL, AV_LOG_ERROR, "Can not get the stream, file: %s.\n", infp);
+        avformat_close_input(fmt_ctx);
+        return err;
+    }
+
+    AVCodecParameters *codecpar = (*fmt_ctx)->streams[stream]->codecpar; // Codec parameters associated with the stream.
+    if (codecpar == NULL) {
+        av_log(NULL, AV_LOG_ERROR, "Can not find codec parameters, file: %s.\n", infp);
+        avformat_close_input(fmt_ctx);
+        return ERR_CODEC_PARAMETER;
+    }
+
+    *ctx = avcodec_alloc_context3(*codec); // [!] The resulting struct should be freed with avcodec_free_context().
+    if (ctx == NULL) {
+        av_log(NULL, AV_LOG_ERROR, "Can not allocate decoder context, file: %s.\n", infp);
+        avformat_close_input(fmt_ctx);
+        return ERR_CODEC_CONTEXT;
+    }
+
+    err = avcodec_parameters_to_context(*ctx, codecpar);
+    if (err < 0) {
+        av_log(NULL, AV_LOG_ERROR, "Can not copy decoder context, file: %s.\n", infp);
+        avcodec_free_context(ctx);
+        avformat_close_input(fmt_ctx);
+        return err;
+    }
+
+    // Unfortunately, FFmpeg library may see a pixel format incorrectly.
+    // Here we provide a method to override the automatically selected pixel
+    // format.
+    if (pix_fmt_id >= 0) {
+        (*ctx)->pix_fmt = pix_fmt_id;
+        av_log(NULL, AV_LOG_INFO, "Overriding pixel format ID with: %d.\n", pix_fmt_id);
+    }
+
+    err = avcodec_open2(*ctx, *codec, NULL);
+    if (err < 0) {
+        av_log(ctx, AV_LOG_ERROR, "Can not open decoder, file: %s.\n", infp);
+        avcodec_free_context(ctx);
+        avformat_close_input(fmt_ctx);
+        return err;
+    }
+
+    return SUCCESS;
+}
+
+/*
+ * Decode the best video stream from the file, make snapshot images,
+ * save them to disk.
+ *
  * If stream index is negative, e.g. -1, it is ignored. If stream index is >= 0,
  * it overrides the automatically selected stream index.
+ *
+ * If pixel format ID is negative, e.g. -1, it is ignored. If pixel format ID
+ * is >= 0, it overrides the automatically selected pixel format.
  *
  * If 'N-th' parameter is 0, all frames will be saved. If it is >0, every N-th
  * frame will be saved and the first frame too.
@@ -23,8 +237,8 @@
  * @param infp          input file path
  * @param outfdp        output folder path
  * @param writer        file writer type
- * @param si            stream index
  * @param fn            number of processed frames
+ * @param si            stream index
  * @param pix_fmt_id    ID of a pixel format
  * @param nth           N-th frame to save
  *
@@ -37,117 +251,14 @@ errno_t make_video_snapshots(const char *infp,
                              int si,
                              int pix_fmt_id,
                              int nth) {
-    AVFormatContext *fmt_ctx = NULL;
-    errno_t err = avformat_open_input(&fmt_ctx, infp, NULL, NULL); // [!] The stream must be closed with avformat_close_input().
+    AVFormatContext *fmt_ctx = malloc(sizeof(AVFormatContext));
+    AVCodec *codec = malloc(sizeof(AVCodec));
+    AVCodecContext *ctx = malloc(sizeof(AVCodecContext));
+    int stream = -1;
+    errno_t err = prepare_decoder_normal(&fmt_ctx, &codec, &ctx, &stream, infp, si, pix_fmt_id);
     if (err < 0) {
-        av_log(NULL, AV_LOG_ERROR, "Can not open the file: %s.\n", infp);
+        av_log(NULL, AV_LOG_ERROR, "Codec preparation has failed, error code: %d.\n", err);
         return err;
-    }
-
-    err = avformat_find_stream_info(fmt_ctx, NULL);
-    if (err < 0) {
-        av_log(NULL, AV_LOG_ERROR, "Can not get the stream, file: %s.\n", infp);
-        avformat_close_input(&fmt_ctx);
-        return err;
-    }
-
-    int stream = 0;
-    if (si >= 0) { // Stream index override.
-        stream = si;
-    } else {
-        stream = av_find_best_stream(fmt_ctx, AVMEDIA_TYPE_VIDEO, -1, -1, NULL, 0); // Video stream index.
-        if (stream == AVERROR_STREAM_NOT_FOUND) {
-            av_log(NULL, AV_LOG_ERROR, "Can not find video stream, file: %s.\n", infp);
-            avformat_close_input(&fmt_ctx);
-            return (errno_t) stream;
-        } else if (stream == AVERROR_DECODER_NOT_FOUND) {
-            av_log(NULL, AV_LOG_ERROR, "Can not find decoder for video stream, file: %s.\n", infp);
-            avformat_close_input(&fmt_ctx);
-            return (errno_t) stream;
-        } else if (stream < 0) {
-            av_log(NULL, AV_LOG_ERROR, "Can not find video stream, file: %s.\n", infp);
-            avformat_close_input(&fmt_ctx);
-            return (errno_t) stream;
-        }
-    }
-
-    AVCodecParameters *codecpar = fmt_ctx->streams[stream]->codecpar; // Codec parameters associated with the stream.
-    if (codecpar == NULL) {
-        av_log(NULL, AV_LOG_ERROR, "Can not find codec parameters, file: %s.\n", infp);
-        avformat_close_input(&fmt_ctx);
-        return ERR_CODEC_PARAMETER;
-    }
-
-    // FFmpeg tool uses a default decoder for WebM video. The default
-    // decoder does not recognize YUVA420p format and sees it as YUV420p.
-    // Even if the pixel format is set manually like so:
-    //      ctx->pix_fmt = AV_PIX_FMT_YUVA420P; // AV_PIX_FMT_YUVA420P = 33.
-    // the decoder is unable to see the alpha channel. This is disgusting.
-    // https://stackoverflow.com/questions/66702932/is-there-a-way-to-force-ffmpeg-to-decode-a-video-stream-with-alpha-from-a-webm
-    /* Luckily, there is a dirty hack to set the decoder manually. :\ */
-    // https://stackoverflow.com/questions/75940195/ffmpeg-library-is-detecting-pixel-format-of-vp9-video-stream-not-correctly
-    const AVCodec *codec = NULL;
-    if (codecpar->codec_id == AV_CODEC_ID_VP9) {
-        codec = avcodec_find_decoder_by_name(CODEC_LIBVPX_VP9);
-
-        // TODO: Dear Gyan, this shit does not help. Why ?
-        // VP9 requires a non-standard approach for decoding.
-        //avformat_close_input(&fmt_ctx);
-        //return make_video_snapshots_vp9(infp, outfdp, writer, fn, pix_fmt_id, nth, stream);
-    } else {
-        codec = avcodec_find_decoder(codecpar->codec_id);
-    }
-    if (codec == NULL) {
-        av_log(NULL, AV_LOG_ERROR, "Can not find a decoder, file: %s.\n", infp);
-        avformat_close_input(&fmt_ctx);
-        return ERR_CODEC;
-    }
-
-    AVCodecContext *ctx = avcodec_alloc_context3(codec); // [!] The resulting struct should be freed with avcodec_free_context().
-    if (ctx == NULL) {
-        av_log(NULL, AV_LOG_ERROR, "Can not allocate decoder context, file: %s.\n", infp);
-        avformat_close_input(&fmt_ctx);
-        return ERR_CODEC_CONTEXT;
-    }
-
-    err = avcodec_parameters_to_context(ctx, codecpar);
-    if (err < 0) {
-        av_log(NULL, AV_LOG_ERROR, "Can not copy decoder context, file: %s.\n", infp);
-        avcodec_free_context(&ctx);
-        avformat_close_input(&fmt_ctx);
-        return err;
-    }
-
-    // Unfortunately, libvpx decoder sees pixel format incorrectly too.
-    // Here we provide a method to override the automatically selected pixel
-    //  format. FFmpeg library is disgusting.
-    if (pix_fmt_id >= 0) {
-        ctx->pix_fmt = pix_fmt_id;
-    }
-    av_log(NULL, AV_LOG_INFO, "Using pixel format ID: %d.\n", ctx->pix_fmt);
-
-    err = avcodec_open2(ctx, codec, NULL);
-    if (err < 0) {
-        av_log(ctx, AV_LOG_ERROR, "Can not open decoder, file: %s.\n", infp);
-        avcodec_free_context(&ctx);
-        avformat_close_input(&fmt_ctx);
-        return err;
-    }
-
-    int buf_size = av_image_get_buffer_size(ctx->pix_fmt, ctx->width, ctx->height, 32);
-    if (buf_size < 0) {
-        av_log(NULL, AV_LOG_ERROR, "Can not get buffer size, file: %s.\n", infp);
-        avcodec_free_context(&ctx);
-        avformat_close_input(&fmt_ctx);
-        return ERR_BUFFER_SIZE;
-    }
-
-    uint8_t *buf = av_malloc(buf_size); // [!] -> av_free.
-    if (buf == NULL) {
-        av_log(NULL, AV_LOG_ERROR, "Can not allocate buffer, file: %s.\n", infp);
-        avcodec_free_context(&ctx);
-        avformat_close_input(&fmt_ctx);
-        return ERR_BUFFER;
     }
 
     // Settings of the output image.
@@ -169,10 +280,25 @@ errno_t make_video_snapshots(const char *infp,
         pixel_channels_count = PIXEL_CHANNELS_COUNT_RGB;
     } else {
         av_log(NULL, AV_LOG_ERROR, "Unsupported image writer: %s.\n", writer);
-        av_free(buf);
         avcodec_free_context(&ctx);
         avformat_close_input(&fmt_ctx);
         return ERR_UNKNOWN_WRITER;
+    }
+
+    int buf_size = av_image_get_buffer_size(ctx->pix_fmt, ctx->width, ctx->height, linesize_alignment);
+    if (buf_size < 0) {
+        av_log(NULL, AV_LOG_ERROR, "Can not get buffer size, file: %s.\n", infp);
+        avcodec_free_context(&ctx);
+        avformat_close_input(&fmt_ctx);
+        return ERR_BUFFER_SIZE;
+    }
+
+    uint8_t *buf = av_malloc(buf_size); // [!] -> av_free.
+    if (buf == NULL) {
+        av_log(NULL, AV_LOG_ERROR, "Can not allocate buffer, file: %s.\n", infp);
+        avcodec_free_context(&ctx);
+        avformat_close_input(&fmt_ctx);
+        return ERR_BUFFER;
     }
 
     int rgb_buf_size = av_image_get_buffer_size(dstPixelFormat, ctx->width, ctx->height, linesize_alignment);
@@ -216,7 +342,7 @@ errno_t make_video_snapshots(const char *infp,
         return ERR_SWS_CONTEXT;
     }
 
-//    printf("#tb %d: %d/%d\n", stream, fmt_ctx->streams[stream]->time_base.num, fmt_ctx->streams[stream]->time_base.den);
+//    printf("#tb %d: %d/%d\n", stream, (*fmt_ctx)->streams[stream]->time_base.num, (*fmt_ctx)->streams[stream]->time_base.den);
 
     AVPacket *pkt = av_packet_alloc(); // [!] The resulting struct must be freed using av_packet_free().
     if (pkt == NULL) {
@@ -261,89 +387,6 @@ errno_t make_video_snapshots(const char *infp,
     avcodec_free_context(&ctx);
     avformat_close_input(&fmt_ctx);
     return SUCCESS;
-}
-
-/*
- * Decode the specified VP9 video stream from the file, make snapshot images,
- * save them to disk.
- *
- * This method is a modified version of the original 'make_video_snapshots'. It
- * is needed to avoid all the madness of the VP9 decoding with FFmpeg.
- * https://stackoverflow.com/questions/75940195/
- *
- * If pixel format ID is negative, e.g. -1, it is ignored. If pixel format ID
- * is >= 0, it overrides the automatically selected pixel format.
- *
- * If stream index is negative, e.g. -1, it is ignored. If stream index is >= 0,
- * it overrides the automatically selected stream index.
- *
- * If 'N-th' parameter is 0, all frames will be saved. If it is >0, every N-th
- * frame will be saved and the first frame too.
- *
- * @param infp          input file path
- * @param outfdp        output folder path
- * @param writer        file writer type
- * @param fn            number of processed frames
- * @param pix_fmt_id    ID of a pixel format
- * @param nth           N-th frame to save
- * @param stream        index of a stream to decode
- *
- * @return              negative error code in case of failure, otherwise >= 0.
- */
-errno_t make_video_snapshots_vp9(const char *infp,
-                                 const char *outfp,
-                                 char *writer,
-                                 int *fn,
-                                 int pix_fmt_id,
-                                 int nth,
-                                 int stream) {
-    AVFormatContext *fmt_ctx = NULL;
-    errno_t err = avformat_open_input(&fmt_ctx, infp, NULL, NULL); // [!] The stream must be closed with avformat_close_input().
-    if (err < 0) {
-        av_log(NULL, AV_LOG_ERROR, "Can not open the file: %s.\n", infp);
-        return err;
-    }
-
-    AVCodecParameters *codecpar = fmt_ctx->streams[stream]->codecpar; // Codec parameters associated with the stream.
-    if (codecpar == NULL) {
-        av_log(NULL, AV_LOG_ERROR, "Can not find codec parameters, file: %s.\n", infp);
-        avformat_close_input(&fmt_ctx);
-        return ERR_CODEC_PARAMETER;
-    }
-
-    const AVCodec *codec = NULL;
-    codec = avcodec_find_decoder_by_name(CODEC_LIBVPX_VP9);
-    if (codec == NULL) {
-        av_log(NULL, AV_LOG_ERROR, "Can not find a decoder, file: %s.\n", infp);
-        avformat_close_input(&fmt_ctx);
-        return ERR_CODEC;
-    }
-
-    err = avformat_find_stream_info(fmt_ctx, NULL);
-    if (err < 0) {
-        av_log(NULL, AV_LOG_ERROR, "Can not get the stream, file: %s.\n", infp);
-        avformat_close_input(&fmt_ctx);
-        return err;
-    }
-
-    AVCodecContext *ctx = avcodec_alloc_context3(codec); // [!] The resulting struct should be freed with avcodec_free_context().
-    if (ctx == NULL) {
-        av_log(NULL, AV_LOG_ERROR, "Can not allocate decoder context, file: %s.\n", infp);
-        avformat_close_input(&fmt_ctx);
-        return ERR_CODEC_CONTEXT;
-    }
-
-    err = avcodec_parameters_to_context(ctx, codecpar);
-    if (err < 0) {
-        av_log(NULL, AV_LOG_ERROR, "Can not copy decoder context, file: %s.\n", infp);
-        avcodec_free_context(&ctx);
-        avformat_close_input(&fmt_ctx);
-        return err;
-    }
-
-    fprintf(stdout, "Pixel format: %d.\n", ctx->pix_fmt);
-
-    return -1; //TODO: Gyan's comments do not help.
 }
 
 /*
