@@ -13,6 +13,7 @@ This tool supports a lot of video formats and works in a console mode.
 - [Installing](#section_4)
 - [Usage](#section_5)
 - [Version & Dependency](#section_6)
+- [Feedback](#section_7)
 
 ## <a name="section_1">Input (Video) Formats</a>
 
@@ -202,3 +203,8 @@ This tool was built using following libraries.
 
 * **stb**, no versioning  
   DLL Files: none.
+
+## <a name="section_7">Feedback</a>
+
+If you have found a bug, have comments or want to suggest a new feature to be
+implemented, feel free to open an issue in this GitHub repository.
