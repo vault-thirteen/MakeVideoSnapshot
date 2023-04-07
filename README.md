@@ -108,21 +108,24 @@ in the `Usage` section of this file.
 
 ## <a name="section_4">Installing</a>
 
-* Make DLL files of `FFmpeg` 6.0 accessible to the program:
-    * either install the shared version of `FFmpeg` 6.0 and add it's `bin` folder to `PATH` environment variable
-    * or copy following DLL files into the program's directory:
-        * avcodec-60.dll
-        * avformat-60.dll
-        * avutil-58.dll
-        * swscale-7.dll
+* Make DLL files of `FFmpeg` library accessible to the program:
+    * either install the shared version of `FFmpeg` and add
+      it's `bin` folder to `PATH` environment variable
+    * or copy its DLL files into the program's directory
+
+
 * Make DLL files of `libpng` library accessible to the program:
-    * either install the `libpng` library and make it visible via `PATH` environment variable
-    * or copy following DLL files into the program's directory:
-        * libpng16.dll
+    * either install the `libpng` library and make it visible
+      via `PATH` environment variable
+    * or copy its DLL files into the program's directory
+
+
 * Make DLL files of `zlib` library accessible to the program:
-    * either install the `zlib` library and make it visible via `PATH` environment variable
-    * or copy following DLL files into the program's directory:
-        * zlib.dll
+    * either install the `zlib` library and make it visible
+      via `PATH` environment variable
+    * or copy its DLL files into the program's directory
+
+List of required DLL files is described in [Version & Dependency](#section_6) section.
 
 ## <a name="section_5">Usage</a>
 
@@ -181,8 +184,21 @@ This tool does not have its own strict versioning.
 
 This tool was built using following libraries.
 
-* FFmpeg, version `6.0`.
-* libjpeg, version `9e`.
-* libpng, version `1.6.39`.
-* zlib, version `1.2.13`.
-* stb, no versioning.
+* **FFmpeg** version `6.0`  
+  DLL Files: avcodec-60.dll, avformat-60.dll, avutil-58.dll, swscale-7.dll.
+
+
+* **libjpeg** version `9e`  
+  DLL Files: none, it is built-into as a static library.
+
+
+* **libpng** version `1.6.39`  
+  DLL Files: libpng16.dll.
+
+
+* **zlib** version `1.2.13`  
+  DLL Files: zlib.dll.
+
+
+* **stb**, no versioning  
+  DLL Files: none.
