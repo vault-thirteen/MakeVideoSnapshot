@@ -162,7 +162,7 @@ The program works in console mode and requires six (6) command line arguments:
    Possible values are following:
     * `libpng`
         * PNG format with the best compression and alpha channel
-    * `libjpg`
+    * `libjpeg`
         * JPEG format with the best quality (100)
     * `stb`
         * PNG format with no compression, but with an alpha channel
