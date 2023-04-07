@@ -1,0 +1,3 @@
+FD17630D MakeVideoSnapshot.exe
+EA7BBA7D libpng16.dll
+D89BE04D zlib.dll
