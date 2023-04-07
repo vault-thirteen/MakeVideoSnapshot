@@ -45,7 +45,7 @@ in the `Usage` section of this file.
         * CMake support is already built into CLion.
 
 
-* Get the latest stable shared library of the `FFmpeg` project.
+* Get the stable shared library of the `FFmpeg` project.
     * https://ffmpeg.org/download.html
 
 
@@ -81,6 +81,9 @@ in the `Usage` section of this file.
 * Build the project using Visual Studio directly or via CLion.  
   Why ? There are many reasons. The first one is because MinGW is not able to  
   properly read object files (`.obj`) built for Microsoft Windows systems.
+
+
+* Versions of dependencies are described in [Version & Dependency](#section_6) section.
 
 ### Building in Visual Studio
 
