@@ -106,7 +106,7 @@ in the `Usage` section of this file.
 ## <a name="section_4">Installing</a>
 
 * Make DLL files of `FFmpeg` 6.0 accessible to the program:
-    * either install the `FFmpeg` 6.0 and add it's `bin` folder to `PATH` environment variable
+    * either install the shared version of `FFmpeg` 6.0 and add it's `bin` folder to `PATH` environment variable
     * or copy following DLL files into the program's directory:
         * avcodec-60.dll
         * avformat-60.dll
