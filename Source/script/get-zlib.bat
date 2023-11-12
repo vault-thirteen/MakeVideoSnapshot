@@ -6,7 +6,7 @@
 :: Settings.
 SET Repository=https://github.com/vault-thirteen/zlib.git
 SET LibFolder=zlib
-SET LibVersion=1.2.13
+SET LibVersion=1.3
 SET ScriptFolder=script
 
 :: Download the Code.

@@ -70,7 +70,7 @@ in the `Usage` section of this file.
     * Or use the provided `get-libpng.bat` script.
 
 
-* Get the `sdb` library.
+* Get the `stb` library.
     * https://github.com/nothings/stb
     * Or use the provided `get-stb.bat` script.
 
@@ -186,7 +186,7 @@ This tool does not have its own strict versioning.
 
 This tool was built using following libraries.
 
-* **FFmpeg** version `6.0`  
+* **FFmpeg** version `6.1`  
   DLL Files: avcodec-60.dll, avformat-60.dll, avutil-58.dll, swscale-7.dll.
 
 
@@ -194,11 +194,11 @@ This tool was built using following libraries.
   DLL Files: none, it is built-into as a static library.
 
 
-* **libpng** version `1.6.39`  
+* **libpng** version `1.6.40`  
   DLL Files: libpng16.dll.
 
 
-* **zlib** version `1.2.13`  
+* **zlib** version `1.3`  
   DLL Files: zlib.dll.
 
 
