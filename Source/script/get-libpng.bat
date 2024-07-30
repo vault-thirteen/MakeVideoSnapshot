@@ -6,7 +6,7 @@
 :: Settings.
 SET Repository=https://github.com/vault-thirteen/libpng.git
 SET LibFolder=libpng
-SET LibVersion=1.6.39
+SET LibVersion=1.6.43
 SET ScriptFolder=script
 
 :: Download the Code.
