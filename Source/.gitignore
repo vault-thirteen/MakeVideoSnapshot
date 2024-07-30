@@ -18,3 +18,7 @@ libpng/bin/*.dll
 
 # Files of 'stb'.
 stb
+
+# Binary files of 'zlib'.
+zlib/*.dll
+zlib/*.exp
