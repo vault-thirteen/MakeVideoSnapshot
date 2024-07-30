@@ -8,3 +8,9 @@ stb
 .vs
 out
 CMakeSettings.json
+
+# Binary files of FFmpeg.
+ffmpeg/avcodec-61.dll
+ffmpeg/avformat-61.dll
+ffmpeg/avutil-59.dll
+ffmpeg/swscale-8.dll
