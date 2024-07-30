@@ -11,6 +11,7 @@ SET ScriptFolder=script
 
 :: Download the Code.
 git clone %Repository%
+IF %ErrorLevel% NEQ 0 EXIT /b %ErrorLevel%
 
 :: Prepare the code.
 CD ..

@@ -11,6 +11,7 @@ SET ScriptFolder=script
 
 :: Download the Code.
 :: Do it manually.
+IF EXIST "%FFmpegFolder%\" (ECHO FFmpeg is found) ELSE (EXIT /B 1)
 
 :: Prepare the code.
 CD ..
