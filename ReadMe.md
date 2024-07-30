@@ -7,8 +7,8 @@ This tool supports a lot of video formats and works in a console mode.
 ## <a name="section_0">Contents</a>
 
 - [Contents](#section_0)
-- [Input (Video) Formats](#section_1)
-- [Output (Image) Formats](#section_2)
+- [Input Video Format](#section_1)
+- [Output Image Format](#section_2)
 - [Building](#section_3)
 - [Installing](#section_4)
 - [Usage](#section_5)
@@ -16,7 +16,7 @@ This tool supports a lot of video formats and works in a console mode.
 - [Build Information](#section_7)
 - [Feedback](#section_8)
 
-## <a name="section_1">Input (Video) Formats</a>
+## <a name="section_1">Input Video Format</a>
 
 This tool supports all the video formats, supported by the `FFmpeg` library.
 However, sometimes there may be some difficulty with specific format, as the
@@ -28,19 +28,19 @@ pixel format incorrectly. For such cases this tool provides a method to set
 stream index and pixel format manually. More information about this is
 provided in the `Usage` section of this file.
 
-## <a name="section_2">Output (Image) Formats</a>
+## <a name="section_2">Output Image Format</a>
 
-This tool can export snapshots as PNG's and JPEG's. More information about
-output image formats is provided in the description of the `Writer` parameter
-in the `Usage` section of this file.
+This tool can export snapshots as images in PNG and JPEG formats. More 
+information about output image formats is provided in the description of the 
+`Writer` parameter in the `Usage` section of this file.
 
 ## <a name="section_3">Building</a>
 
-* Install the latest version of CMake tool.
+* Install the latest version of `CMake` tool.
     * https://cmake.org/
 
 
-* Install one or more IDEs with support for CMake:
+* Install one or more IDEs with support for `CMake`:
     * `Visual Studio` by Microsoft.
         * CMake support in Visual Studio must be installed as a separate feature.
     * `CLion` by JetBrains;
@@ -51,13 +51,9 @@ in the `Usage` section of this file.
     * https://ffmpeg.org/download.html
 
 
-* Update all FFmpeg-related files from the downloaded FFmpeg build.
-    * DLL libraries, H (header) files and LIB files for:
-        * AVCodec,
-        * AVFormat,
-        * AVUtil,
-        * SWScale.
-    * They should be located in the `ffmpeg` folder.
+* Update all files related to `FFmpeg` from the downloaded `FFmpeg` build.
+    * Configure the path to a folder where `FFmpeg` is sitting (`FFmpegFolder` variable).
+    * Use the provided `get-ffmpeg.bat` script.
 
 
 * Get the `libjpeg` library.
@@ -80,52 +76,43 @@ in the `Usage` section of this file.
     * Or use the provided `get-zlib.bat` script.
 
 
-* Build the project using Visual Studio directly or via CLion.  
-  Why ? There are many reasons. The first one is because MinGW is not able to  
-  properly read object files (`.obj`) built for Microsoft Windows systems.
+* All "get" scripts can be started with a single helper script.
+    * Use the provided `get-all.bat` script.
+
+
+* Build the project using `Visual Studio` or via `CLion`.
 
 
 * Versions of dependencies are described in [Version & Dependency](#section_6) section.
 
 ### Building in Visual Studio
 
-* Open CMake GUI, set folders, configure & generate files for Visual Studio.
-* Install the CMake feature for Visual Studio.
-* Open the created solution in Visual Studio and build it.
+* Open `CMake` GUI, set folders, configure & generate files for `Visual Studio`.
+* Open the created solution in `Visual Studio` and build it.
+
+* Alternatively, you can install the `CMake` feature for `Visual Studio` and open the `CMake` project in `Visual Studio`. 
+However, we recommend using `CMake` directly.
 
 ### Building in CLion
 
-* Install Microsoft Visual Studio 2022 (Community Edition).
-* Install CLion and open the project in it.
+* Install `Microsoft Visual Studio 2022 (Community Edition)`.
+* Install `CLion` and open the project in it.
 * Open: `Settings -> Build, Execution, Deployment -> Toolchains`.
     * Add the Visual Studio toolchain and make it default.
 * Open: `Settings -> Build, Execution, Deployment -> CMake`.
-    * Disable all the profiles related to MinGW.
-    * Add two profiles for Visual Studio: Release & Debug.
-* Click: `Tool -> CMake -> Reset Cache and Reload Project`.
+    * Disable all the profiles related to `MinGW`.
+    * Add two profiles for `Visual Studio`: Release & Debug.
+* Click: `Tools -> CMake -> Reset Cache and Reload Project`.
     * In case of an error about `CMAKE_MAKE_PROGRAM` which is not found:
-        * Install MinGW, including its version of the `make` tool,
-        * Add MinGW's `bin` folder to your system's `PATH` environment variable.
+        * Install `MinGW`, including its version of the `make` tool,
+        * Add the `bin` folder of `MinGW` to your system's `PATH` environment variable.
 * Build the project.
 
 ## <a name="section_4">Installing</a>
 
-* Make DLL files of `FFmpeg` library accessible to the program:
-    * either install the shared version of `FFmpeg` and add
-      it's `bin` folder to `PATH` environment variable
-    * or copy its DLL files into the program's directory
+* Copy the built executable file into a desired directory. 
 
-
-* Make DLL files of `libpng` library accessible to the program:
-    * either install the `libpng` library and make it visible
-      via `PATH` environment variable
-    * or copy its DLL files into the program's directory
-
-
-* Make DLL files of `zlib` library accessible to the program:
-    * either install the `zlib` library and make it visible
-      via `PATH` environment variable
-    * or copy its DLL files into the program's directory
+* Copy DLL files of third party libraries into that directory.
 
 List of required DLL files is described in [Version & Dependency](#section_6) section.
 
@@ -186,19 +173,19 @@ This tool does not have its own strict versioning.
 
 This tool was built using following libraries.
 
-* **FFmpeg** version `6.1`  
-  DLL Files: avcodec-60.dll, avformat-60.dll, avutil-58.dll, swscale-7.dll.
+* **FFmpeg** version `7.0.1`  
+  DLL Files: avcodec-61.dll, avformat-61.dll, avutil-59.dll, swresample-5.dll, swscale-8.dll.
 
 
-* **libjpeg** version `9e`  
-  DLL Files: none, it is built-into as a static library.
+* **libjpeg** version `9f`  
+  DLL Files: jpeg.dll.
 
 
-* **libpng** version `1.6.40`  
+* **libpng** version `1.6.43`  
   DLL Files: libpng16.dll.
 
 
-* **zlib** version `1.3`  
+* **zlib** version `1.3.1`  
   DLL Files: zlib.dll.
 
 

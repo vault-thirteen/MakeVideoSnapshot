@@ -7,23 +7,25 @@
 SET Repository=https://github.com/vault-thirteen/libjpeg.git
 SET LibFolder=libjpeg
 SET LibArch=x64
-SET LibVersion=9e
+SET LibVersion=9f
 SET ScriptFolder=script
 
 :: Download the Code.
 git clone %Repository%
+IF %ErrorLevel% NEQ 0 EXIT /b %ErrorLevel%
 
 :: Prepare the code.
 CD ..
 MKDIR "%LibFolder%"
-MKDIR "%LibFolder%\%LibArch%"
-MKDIR "%LibFolder%\%LibArch%\include"
-MKDIR "%LibFolder%\%LibArch%\include\%LibFolder%"
+MKDIR "%LibFolder%\"
+MKDIR "%LibFolder%\bin"
+MKDIR "%LibFolder%\include"
+MKDIR "%LibFolder%\include\%LibFolder%"
+MKDIR "%LibFolder%\lib"
 
-MOVE "%ScriptFolder%\%LibFolder%\Build\%LibVersion%\%LibArch%\jpeg\*.obj" "%LibFolder%\%LibArch%\"
-MOVE "%ScriptFolder%\%LibFolder%\Build\%LibVersion%\%LibArch%\jpeg.lib" "%LibFolder%\%LibArch%\"
-MOVE "%ScriptFolder%\%LibFolder%\Build\%LibVersion%\%LibArch%\jpeg.pdb" "%LibFolder%\%LibArch%\"
-MOVE "%ScriptFolder%\%LibFolder%\Build\%LibVersion%\include\*.h" "%LibFolder%\%LibArch%\include\%LibFolder%\"
+MOVE "%ScriptFolder%\%LibFolder%\Build\%LibVersion%\%LibArch%\jpeg.dll" "%LibFolder%\bin\"
+MOVE "%ScriptFolder%\%LibFolder%\Build\%LibVersion%\%LibArch%\jpeg.lib" "%LibFolder%\lib\"
+MOVE "%ScriptFolder%\%LibFolder%\Build\%LibVersion%\include\*.h" "%LibFolder%\include\%LibFolder%\"
 RMDIR /Q /S "%ScriptFolder%\%LibFolder%"
 
 CD "%ScriptFolder%"

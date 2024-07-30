@@ -4,7 +4,23 @@ cmake-build-release
 cmake-build-debug-visual-studio
 cmake-build-release-visual-studio
 *.exe
-stb
+*.lib
+*.pdb
 .vs
 out
 CMakeSettings.json
+
+# Binary files of 'FFmpeg'.
+ffmpeg/bin/*.dll
+
+# Binary files of 'libjpeg'.
+libjpeg/bin/*.dll
+
+# Binary files of 'libpng'.
+libpng/bin/*.dll
+
+# Files of 'stb'.
+stb
+
+# Binary files of 'zlib'.
+zlib/bin/*.dll

@@ -10,6 +10,7 @@ SET ScriptFolder=script
 
 :: Download the Code.
 git clone %Repository%
+IF %ErrorLevel% NEQ 0 EXIT /b %ErrorLevel%
 
 :: Prepare the code.
 MOVE "%LibFolder%" ..\
@@ -24,4 +25,4 @@ RMDIR /Q /S "tests"
 RMDIR /Q /S "tools"
 DEL ".travis.yml"
 
-CD "%ScriptFolder%"
+CD "..\%ScriptFolder%"
