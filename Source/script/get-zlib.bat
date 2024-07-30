@@ -15,13 +15,13 @@ git clone %Repository%
 :: Prepare the code.
 CD ..
 MKDIR "%LibFolder%"
+MKDIR "%LibFolder%\bin"
 MKDIR "%LibFolder%\include"
 MKDIR "%LibFolder%\include\%LibFolder%"
+MKDIR "%LibFolder%\lib"
 
-MOVE "%ScriptFolder%\%LibFolder%\Build\%LibVersion%\zlib.dll" "%LibFolder%\"
-MOVE "%ScriptFolder%\%LibFolder%\Build\%LibVersion%\zlib.exp" "%LibFolder%\"
-MOVE "%ScriptFolder%\%LibFolder%\Build\%LibVersion%\zlib.lib" "%LibFolder%\"
-MOVE "%ScriptFolder%\%LibFolder%\Build\%LibVersion%\zlibstatic.lib" "%LibFolder%\"
+MOVE "%ScriptFolder%\%LibFolder%\Build\%LibVersion%\zlib*.dll" "%LibFolder%\bin\"
+MOVE "%ScriptFolder%\%LibFolder%\Build\%LibVersion%\zlib*.lib" "%LibFolder%\lib\"
 MOVE "%ScriptFolder%\%LibFolder%\Build\%LibVersion%\include\*.h" "%LibFolder%\include\%LibFolder%\"
 RMDIR /Q /S "%ScriptFolder%\%LibFolder%"
 

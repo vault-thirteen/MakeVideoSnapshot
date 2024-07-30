@@ -102,7 +102,7 @@ errno_t write_with_libpng(const char *fname, int w, int h, const uint8_t *buf, c
 
     // Meta-data: Title.
     if (title != NULL) {
-        png_text title_text = {PNG_TEXT_COMPRESSION_NONE, "Title", title,
+        png_text title_text = {PNG_TEXT_COMPRESSION_NONE, "Title", (char *) title,
                                strlen(title), 0, NULL, NULL};
         png_set_text(png_ptr, info_ptr, &title_text, 1);
     }

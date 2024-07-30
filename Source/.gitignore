@@ -11,14 +11,16 @@ out
 CMakeSettings.json
 
 # Binary files of 'FFmpeg'.
-ffmpeg/*.dll
+ffmpeg/bin/*.dll
 
 # Binary files of 'libpng'.
 libpng/bin/*.dll
+
+# Binary files of 'libjpeg'.
+libjpeg/bin/*.dll
 
 # Files of 'stb'.
 stb
 
 # Binary files of 'zlib'.
-zlib/*.dll
-zlib/*.exp
+zlib/bin/*.dll

@@ -102,7 +102,7 @@ information about output image formats is provided in the description of the
 * Open: `Settings -> Build, Execution, Deployment -> CMake`.
     * Disable all the profiles related to `MinGW`.
     * Add two profiles for `Visual Studio`: Release & Debug.
-* Click: `Tool -> CMake -> Reset Cache and Reload Project`.
+* Click: `Tools -> CMake -> Reset Cache and Reload Project`.
     * In case of an error about `CMAKE_MAKE_PROGRAM` which is not found:
         * Install `MinGW`, including its version of the `make` tool,
         * Add the `bin` folder of `MinGW` to your system's `PATH` environment variable.
