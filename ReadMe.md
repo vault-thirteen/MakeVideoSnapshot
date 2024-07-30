@@ -52,12 +52,8 @@ information about output image formats is provided in the description of the
 
 
 * Update all files related to `FFmpeg` from the downloaded `FFmpeg` build.
-    * DLL libraries, H (header) files and LIB files for:
-        * AVCodec,
-        * AVFormat,
-        * AVUtil,
-        * SWScale.
-    * They should be located in the `ffmpeg` folder.
+    * Configure the path to a folder where `FFmpeg` is sitting (`FFmpegFolder` variable).
+    * Use the provided `get-ffmpeg.bat` script.
 
 
 * Get the `libjpeg` library.
@@ -80,9 +76,11 @@ information about output image formats is provided in the description of the
     * Or use the provided `get-zlib.bat` script.
 
 
-* Build the project using `Visual Studio` directly or via `CLion`.  
-  Why ? There are many reasons. The first one is because `MinGW` is not able to  
-  properly read object files (`.obj`) built for `Microsoft Windows` systems.
+* All "get" scripts can be started with a single helper script.
+    * Use the provided `get-all.bat` script.
+
+
+* Build the project using `Visual Studio` or via `CLion`.
 
 
 * Versions of dependencies are described in [Version & Dependency](#section_6) section.
@@ -90,8 +88,10 @@ information about output image formats is provided in the description of the
 ### Building in Visual Studio
 
 * Open `CMake` GUI, set folders, configure & generate files for `Visual Studio`.
-* Install the `CMake` feature for `Visual Studio`.
 * Open the created solution in `Visual Studio` and build it.
+
+* Alternatively, you can install the `CMake` feature for `Visual Studio` and open the `CMake` project in `Visual Studio`. 
+However, we recommend using `CMake` directly.
 
 ### Building in CLion
 
@@ -110,22 +110,9 @@ information about output image formats is provided in the description of the
 
 ## <a name="section_4">Installing</a>
 
-* Make DLL files of `FFmpeg` library accessible to the program:
-    * either install the shared version of `FFmpeg` and add
-      it's `bin` folder to `PATH` environment variable
-    * or copy its DLL files into the program's directory
+* Copy the built executable file into a desired directory. 
 
-
-* Make DLL files of `libpng` library accessible to the program:
-    * either install the `libpng` library and make it visible
-      via `PATH` environment variable
-    * or copy its DLL files into the program's directory
-
-
-* Make DLL files of `zlib` library accessible to the program:
-    * either install the `zlib` library and make it visible
-      via `PATH` environment variable
-    * or copy its DLL files into the program's directory
+* Copy DLL files of third party libraries into that directory.
 
 List of required DLL files is described in [Version & Dependency](#section_6) section.
 
@@ -187,11 +174,11 @@ This tool does not have its own strict versioning.
 This tool was built using following libraries.
 
 * **FFmpeg** version `7.0.1`  
-  DLL Files: avcodec-61.dll, avformat-61.dll, avutil-59.dll, swscale-8.dll.
+  DLL Files: avcodec-61.dll, avformat-61.dll, avutil-59.dll, swresample-5.dll, swscale-8.dll.
 
 
 * **libjpeg** version `9f`  
-  DLL Files: none, it is built-into as a static library.
+  DLL Files: jpeg.dll.
 
 
 * **libpng** version `1.6.43`  
