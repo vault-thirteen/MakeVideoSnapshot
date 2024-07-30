@@ -13,11 +13,11 @@ CMakeSettings.json
 # Binary files of 'FFmpeg'.
 ffmpeg/bin/*.dll
 
-# Binary files of 'libpng'.
-libpng/bin/*.dll
-
 # Binary files of 'libjpeg'.
 libjpeg/bin/*.dll
+
+# Binary files of 'libpng'.
+libpng/bin/*.dll
 
 # Files of 'stb'.
 stb
