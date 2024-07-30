@@ -1,4 +1,4 @@
-6C7A2734 MakeVideoSnapshot.exe
+8A4484D7 MakeVideoSnapshot.exe
 D8B47436 avcodec-61.dll
 1800090 avformat-61.dll
 A3AF3202 avutil-59.dll
