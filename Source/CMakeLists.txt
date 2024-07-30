@@ -1,9 +1,9 @@
 cmake_minimum_required(VERSION 3.28)
-project(MakeVideoSnapshot VERSION 1.0.0 DESCRIPTION "Video Snapshot Maker" LANGUAGES C)
+project(MakeVideoSnapshot VERSION 0.3.1 DESCRIPTION "Video Snapshot Maker" LANGUAGES C)
 set_target_properties(PROPERTIES VERSION ${PROJECT_VERSION})
 set(CMAKE_C_STANDARD 23)
 
-add_executable(${PROJECT_NAME} image.c main.c mvs.h snapshot.c std.h std.c)
+add_executable(${PROJECT_NAME} image.c main.c mvs.h snapshot.c std.h std.c version.rc)
 
 add_library(avcodec SHARED IMPORTED)
 set_target_properties(avcodec PROPERTIES IMPORTED_IMPLIB "${CMAKE_SOURCE_DIR}/ffmpeg/lib/avcodec.lib")
