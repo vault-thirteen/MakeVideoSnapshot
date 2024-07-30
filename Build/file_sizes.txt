@@ -1,3 +1,4 @@
-160768 MakeVideoSnapshot.exe
-197632 libpng16.dll
-83968 zlib.dll
+160256 MakeVideoSnapshot.exe
+20992 jpeg.dll
+202240 libpng16.dll
+85504 zlib.dll
