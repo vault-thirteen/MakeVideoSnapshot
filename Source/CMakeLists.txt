@@ -27,7 +27,7 @@ set_target_properties(swscale PROPERTIES IMPORTED_LOCATION "${CMAKE_SOURCE_DIR}/
 
 add_library(libjpeg SHARED IMPORTED)
 set_target_properties(libjpeg PROPERTIES IMPORTED_IMPLIB "${CMAKE_SOURCE_DIR}/libjpeg/lib/jpeg.lib")
-set_target_properties(zlib PROPERTIES IMPORTED_LOCATION "${CMAKE_SOURCE_DIR}/libjpeg/bin/jpeg.dll")
+set_target_properties(libjpeg PROPERTIES IMPORTED_LOCATION "${CMAKE_SOURCE_DIR}/libjpeg/bin/jpeg.dll")
 
 add_library(libpng SHARED IMPORTED)
 set_target_properties(libpng PROPERTIES IMPORTED_IMPLIB "${CMAKE_SOURCE_DIR}/libpng/lib/libpng16.lib")
@@ -38,9 +38,9 @@ set_target_properties(zlib PROPERTIES IMPORTED_IMPLIB "${CMAKE_SOURCE_DIR}/zlib/
 set_target_properties(zlib PROPERTIES IMPORTED_LOCATION "${CMAKE_SOURCE_DIR}/zlib/bin/zlib.dll")
 
 target_include_directories(${PROJECT_NAME} PUBLIC "${CMAKE_SOURCE_DIR}/ffmpeg/include")
+target_include_directories(${PROJECT_NAME} PUBLIC "${CMAKE_SOURCE_DIR}/libjpeg/include")
 target_include_directories(${PROJECT_NAME} PUBLIC "${CMAKE_SOURCE_DIR}/libpng/include")
 target_include_directories(${PROJECT_NAME} PUBLIC "${CMAKE_SOURCE_DIR}/zlib/include")
-target_include_directories(${PROJECT_NAME} PUBLIC "${CMAKE_SOURCE_DIR}/libjpeg/include")
 
 target_link_libraries(${PROJECT_NAME} avcodec avformat avutil swresample swscale libjpeg libpng zlib)
 
