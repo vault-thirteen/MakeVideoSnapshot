@@ -7,8 +7,8 @@ This tool supports a lot of video formats and works in a console mode.
 ## <a name="section_0">Contents</a>
 
 - [Contents](#section_0)
-- [Input (Video) Formats](#section_1)
-- [Output (Image) Formats](#section_2)
+- [Input Video Format](#section_1)
+- [Output Image Format](#section_2)
 - [Building](#section_3)
 - [Installing](#section_4)
 - [Usage](#section_5)
