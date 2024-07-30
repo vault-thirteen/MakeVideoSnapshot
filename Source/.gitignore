@@ -4,6 +4,8 @@ cmake-build-release
 cmake-build-debug-visual-studio
 cmake-build-release-visual-studio
 *.exe
+*.lib
+*.pdb
 stb
 .vs
 out
