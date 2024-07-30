@@ -6,7 +6,6 @@ cmake-build-release-visual-studio
 *.exe
 *.lib
 *.pdb
-stb
 .vs
 out
 CMakeSettings.json
@@ -16,3 +15,6 @@ ffmpeg/*.dll
 
 # Binary files of 'libpng'.
 libpng/bin/*.dll
+
+# Files of 'stb'.
+stb
