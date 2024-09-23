@@ -1,8 +1,8 @@
 This build was made using:
 
-* Microsoft Windows 10 Pro 22H2 Build 19045.4894.
-* CMake 3.30.3.
-* Microsoft Visual Studio Community 2022 (64-bit) Version 17.11.4.
+* Microsoft Windows 10 Pro 22H2 Build 19045.4651.
+* CMake 3.29.7.
+* Microsoft Visual Studio Community 2022 (64-bit) Version 17.10.5.
 
 ## Integrity Meta Data
 
@@ -13,10 +13,6 @@ Integrity can be verified using following parameters:
 
 * CRC32 check sums
     * See the `crc32_sums.txt` file, [Link](./crc32_sums.txt).
-
-
-* MD5 check sums
-  * See the `md5_sums.txt` file, [Link](./md5_sums.txt).
 
 
 * SHA-256 check sums
