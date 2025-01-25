@@ -1,2 +1,7 @@
 .idea
 .vs
+Build/avcodec-*.dll
+Build/avformat-*.dll
+Build/avutil-*.dll
+Build/swresample-*.dll
+Build/swscale-*.dll

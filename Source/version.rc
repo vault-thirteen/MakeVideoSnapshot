@@ -1,6 +1,6 @@
 1 VERSIONINFO
-  FILEVERSION     0,3,2,0
-  PRODUCTVERSION  0,3,2,0
+  FILEVERSION     0,3,3,0
+  PRODUCTVERSION  0,3,3,0
   FILEOS          0x00040004L
   FILETYPE        0x00000001L
 BEGIN
@@ -11,9 +11,9 @@ BEGIN
             VALUE "CompanyName",      "Vault Thirteen"
             VALUE "LegalCopyright",   "Vault Thirteen, 2023-2024"
             VALUE "ProductName",      "Video Screenshot Maker"
-            VALUE "ProductVersion",   "0.3.2.0"
+            VALUE "ProductVersion",   "0.3.3.0"
             VALUE "FileDescription",  "Video Screenshot Maker"
-            VALUE "FileVersion",      "0.3.2.0"
+            VALUE "FileVersion",      "0.3.3.0"
         END
     END
     BLOCK "VarFileInfo"
