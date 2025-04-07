@@ -1,9 +1,9 @@
-161792 MakeVideoSnapshot.exe
-89262080 avcodec-61.dll
-18482176 avformat-61.dll
-2814976 avutil-59.dll
+162304 MakeVideoSnapshot.exe
+89117184 avcodec-61.dll
+18723328 avformat-61.dll
+2840576 avutil-59.dll
 20992 jpeg.dll
-202752 libpng16.dll
+198144 libpng16.dll
 438784 swresample-5.dll
 707584 swscale-8.dll
 85504 zlib.dll

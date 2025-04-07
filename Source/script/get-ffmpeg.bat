@@ -5,7 +5,7 @@
 :: This script must be executed from the 'script' folder.
 
 :: Settings.
-SET FFmpegFolder=C:\Tools\ffmpeg-7.1-full_build-shared
+SET FFmpegFolder=C:\Tools\ffmpeg-7.1.1-full_build-shared
 SET LibFolder=ffmpeg
 SET ScriptFolder=script
 
