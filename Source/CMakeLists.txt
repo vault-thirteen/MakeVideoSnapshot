@@ -7,23 +7,23 @@ add_executable(${PROJECT_NAME} image.c main.c mvs.h snapshot.c std.h std.c versi
 
 add_library(avcodec SHARED IMPORTED)
 set_target_properties(avcodec PROPERTIES IMPORTED_IMPLIB "${CMAKE_SOURCE_DIR}/ffmpeg/lib/avcodec.lib")
-set_target_properties(avcodec PROPERTIES IMPORTED_LOCATION "${CMAKE_SOURCE_DIR}/ffmpeg/bin/avcodec-61.dll")
+set_target_properties(avcodec PROPERTIES IMPORTED_LOCATION "${CMAKE_SOURCE_DIR}/ffmpeg/bin/avcodec-62.dll")
 
 add_library(avformat SHARED IMPORTED)
 set_target_properties(avformat PROPERTIES IMPORTED_IMPLIB "${CMAKE_SOURCE_DIR}/ffmpeg/lib/avformat.lib")
-set_target_properties(avformat PROPERTIES IMPORTED_LOCATION "${CMAKE_SOURCE_DIR}/ffmpeg/bin/avformat-61.dll")
+set_target_properties(avformat PROPERTIES IMPORTED_LOCATION "${CMAKE_SOURCE_DIR}/ffmpeg/bin/avformat-62.dll")
 
 add_library(avutil SHARED IMPORTED)
 set_target_properties(avutil PROPERTIES IMPORTED_IMPLIB "${CMAKE_SOURCE_DIR}/ffmpeg/lib/avutil.lib")
-set_target_properties(avutil PROPERTIES IMPORTED_LOCATION "${CMAKE_SOURCE_DIR}/ffmpeg/bin/avutil-59.dll")
+set_target_properties(avutil PROPERTIES IMPORTED_LOCATION "${CMAKE_SOURCE_DIR}/ffmpeg/bin/avutil-60.dll")
 
 add_library(swresample SHARED IMPORTED)
 set_target_properties(swresample PROPERTIES IMPORTED_IMPLIB "${CMAKE_SOURCE_DIR}/ffmpeg/lib/swresample.lib")
-set_target_properties(swresample PROPERTIES IMPORTED_LOCATION "${CMAKE_SOURCE_DIR}/ffmpeg/bin/swresample-5.dll")
+set_target_properties(swresample PROPERTIES IMPORTED_LOCATION "${CMAKE_SOURCE_DIR}/ffmpeg/bin/swresample-6.dll")
 
 add_library(swscale SHARED IMPORTED)
 set_target_properties(swscale PROPERTIES IMPORTED_IMPLIB "${CMAKE_SOURCE_DIR}/ffmpeg/lib/swscale.lib")
-set_target_properties(swscale PROPERTIES IMPORTED_LOCATION "${CMAKE_SOURCE_DIR}/ffmpeg/bin/swscale-8.dll")
+set_target_properties(swscale PROPERTIES IMPORTED_LOCATION "${CMAKE_SOURCE_DIR}/ffmpeg/bin/swscale-9.dll")
 
 add_library(libjpeg SHARED IMPORTED)
 set_target_properties(libjpeg PROPERTIES IMPORTED_IMPLIB "${CMAKE_SOURCE_DIR}/libjpeg/lib/jpeg.lib")

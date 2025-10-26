@@ -52,6 +52,7 @@ information about output image formats is provided in the description of the
 
 
 * Update all files related to `FFmpeg` from the downloaded `FFmpeg` build.
+    * Open the `get-ffmpeg.bat` script for editing.
     * Configure the path to a folder where `FFmpeg` is sitting (`FFmpegFolder` variable).
     * Use the provided `get-ffmpeg.bat` script.
 
