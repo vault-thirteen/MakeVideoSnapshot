@@ -6,7 +6,7 @@
 :: Settings.
 SET Repository=https://github.com/vault-thirteen/zlib.git
 SET LibFolder=zlib
-SET LibVersion=1.3.1
+SET LibVersion=1.3.2
 SET ScriptFolder=script
 
 :: Download the Code.
@@ -21,8 +21,8 @@ MKDIR "%LibFolder%\include"
 MKDIR "%LibFolder%\include\%LibFolder%"
 MKDIR "%LibFolder%\lib"
 
-MOVE "%ScriptFolder%\%LibFolder%\Build\%LibVersion%\zlib*.dll" "%LibFolder%\bin\"
-MOVE "%ScriptFolder%\%LibFolder%\Build\%LibVersion%\zlib*.lib" "%LibFolder%\lib\"
+MOVE "%ScriptFolder%\%LibFolder%\Build\%LibVersion%\z*.dll" "%LibFolder%\bin\"
+MOVE "%ScriptFolder%\%LibFolder%\Build\%LibVersion%\z*.lib" "%LibFolder%\lib\"
 MOVE "%ScriptFolder%\%LibFolder%\Build\%LibVersion%\include\*.h" "%LibFolder%\include\%LibFolder%\"
 RMDIR /Q /S "%ScriptFolder%\%LibFolder%"
 

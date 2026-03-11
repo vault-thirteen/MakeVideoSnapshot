@@ -7,7 +7,7 @@
 SET Repository=https://github.com/vault-thirteen/libjpeg.git
 SET LibFolder=libjpeg
 SET LibArch=x64
-SET LibVersion=9f
+SET LibVersion=10
 SET ScriptFolder=script
 
 :: Download the Code.

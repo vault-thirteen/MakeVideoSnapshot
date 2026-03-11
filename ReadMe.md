@@ -178,15 +178,15 @@ This tool was built using following libraries.
   DLL Files: avcodec-62.dll, avformat-62.dll, avutil-60.dll, swresample-6.dll, swscale-9.dll.
 
 
-* **libjpeg** version `9f`  
+* **libjpeg** version `10`  
   DLL Files: jpeg.dll.
 
 
-* **libpng** version `1.6.53`  
+* **libpng** version `1.6.55`  
   DLL Files: libpng16.dll.
 
 
-* **zlib** version `1.3.1`  
+* **zlib** version `1.3.2`  
   DLL Files: zlib.dll.
 
 

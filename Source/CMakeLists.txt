@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.29)
-project(MakeVideoSnapshot VERSION 0.3.6 DESCRIPTION "Video Snapshot Maker" LANGUAGES C)
+project(MakeVideoSnapshot VERSION 0.3.7 DESCRIPTION "Video Snapshot Maker" LANGUAGES C)
 set_target_properties(PROPERTIES VERSION ${PROJECT_VERSION})
 set(CMAKE_C_STANDARD 23)
 
@@ -34,8 +34,8 @@ set_target_properties(libpng PROPERTIES IMPORTED_IMPLIB "${CMAKE_SOURCE_DIR}/lib
 set_target_properties(libpng PROPERTIES IMPORTED_LOCATION "${CMAKE_SOURCE_DIR}/libpng/bin/libpng16.dll")
 
 add_library(zlib SHARED IMPORTED)
-set_target_properties(zlib PROPERTIES IMPORTED_IMPLIB "${CMAKE_SOURCE_DIR}/zlib/lib/zlib.lib")
-set_target_properties(zlib PROPERTIES IMPORTED_LOCATION "${CMAKE_SOURCE_DIR}/zlib/bin/zlib.dll")
+set_target_properties(zlib PROPERTIES IMPORTED_IMPLIB "${CMAKE_SOURCE_DIR}/zlib/lib/z.lib")
+set_target_properties(zlib PROPERTIES IMPORTED_LOCATION "${CMAKE_SOURCE_DIR}/zlib/bin/z.dll")
 
 target_include_directories(${PROJECT_NAME} PUBLIC "${CMAKE_SOURCE_DIR}/ffmpeg/include")
 target_include_directories(${PROJECT_NAME} PUBLIC "${CMAKE_SOURCE_DIR}/libjpeg/include")
