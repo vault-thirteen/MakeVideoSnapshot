@@ -5,7 +5,7 @@
 :: This script must be executed from the 'script' folder.
 
 :: Settings.
-SET FFmpegFolder=C:\Tools\ffmpeg-8.0.1-full_build-shared
+SET FFmpegFolder=C:\Tools\ffmpeg-8.1-full_build-shared
 SET LibFolder=ffmpeg
 SET ScriptFolder=script
 
@@ -26,17 +26,20 @@ MKDIR "%LibFolder%\include\libswresample"
 MKDIR "%LibFolder%\include\libswscale"
 MKDIR "%LibFolder%\lib"
 
-COPY "%FFmpegFolder%\bin\avcodec-62.dll" "%LibFolder%\bin\"
-COPY "%FFmpegFolder%\bin\avformat-62.dll" "%LibFolder%\bin\"
-COPY "%FFmpegFolder%\bin\avutil-60.dll" "%LibFolder%\bin\"
-COPY "%FFmpegFolder%\bin\swresample-6.dll" "%LibFolder%\bin\"
-COPY "%FFmpegFolder%\bin\swscale-9.dll" "%LibFolder%\bin\"
-
 COPY "%FFmpegFolder%\lib\avcodec.lib" "%LibFolder%\lib\"
+COPY "%FFmpegFolder%\bin\avcodec-62.dll" "%LibFolder%\bin\"
+
 COPY "%FFmpegFolder%\lib\avformat.lib" "%LibFolder%\lib\"
+COPY "%FFmpegFolder%\bin\avformat-62.dll" "%LibFolder%\bin\"
+
 COPY "%FFmpegFolder%\lib\avutil.lib" "%LibFolder%\lib\"
+COPY "%FFmpegFolder%\bin\avutil-60.dll" "%LibFolder%\bin\"
+
 COPY "%FFmpegFolder%\lib\swresample.lib" "%LibFolder%\lib\"
+COPY "%FFmpegFolder%\bin\swresample-6.dll" "%LibFolder%\bin\"
+
 COPY "%FFmpegFolder%\lib\swscale.lib" "%LibFolder%\lib\"
+COPY "%FFmpegFolder%\bin\swscale-9.dll" "%LibFolder%\bin\"
 
 COPY "%FFmpegFolder%\include\libavcodec\*.h" "%LibFolder%\include\libavcodec\"
 COPY "%FFmpegFolder%\include\libavformat\*.h" "%LibFolder%\include\libavformat\"

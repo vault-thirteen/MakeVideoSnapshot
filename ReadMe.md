@@ -174,7 +174,7 @@ This tool does not have its own strict versioning.
 
 This tool was built using following libraries.
 
-* **FFmpeg** version `8.0.1`  
+* **FFmpeg** version `8.1`  
   DLL Files: avcodec-62.dll, avformat-62.dll, avutil-60.dll, swresample-6.dll, swscale-9.dll.
 
 
@@ -182,7 +182,7 @@ This tool was built using following libraries.
   DLL Files: jpeg.dll.
 
 
-* **libpng** version `1.6.55`  
+* **libpng** version `1.6.56`  
   DLL Files: libpng16.dll.
 
 
