@@ -182,7 +182,7 @@ This tool was built using following libraries.
   DLL Files: jpeg.dll.
 
 
-* **libpng** version `1.6.56`  
+* **libpng** version `1.6.58`  
   DLL Files: libpng16.dll.
 
 

@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.29)
-project(MakeVideoSnapshot VERSION 0.3.8 DESCRIPTION "Video Snapshot Maker" LANGUAGES C)
+project(MakeVideoSnapshot VERSION 0.3.9 DESCRIPTION "Video Snapshot Maker" LANGUAGES C)
 set_target_properties(PROPERTIES VERSION ${PROJECT_VERSION})
 set(CMAKE_C_STANDARD 23)
 

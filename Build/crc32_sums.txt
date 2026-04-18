@@ -1,4 +1,4 @@
-F83FB533 MakeVideoSnapshot.exe
+CAD61E50 MakeVideoSnapshot.exe
 16FD8930 jpeg.dll
-912F3BA4 libpng16.dll
+912727B0 libpng16.dll
 295D67EF z.dll
