@@ -1,0 +1,32 @@
+.idea
+cmake-build-debug
+cmake-build-release
+cmake-build-debug-visual-studio
+cmake-build-release-visual-studio
+*.exe
+.vs
+out
+CMakeSettings.json
+
+# Files of 'FFmpeg'.
+ffmpeg/bin
+ffmpeg/include
+ffmpeg/lib
+
+# Files of 'libjpeg'.
+libjpeg/bin
+libjpeg/include
+libjpeg/lib
+
+# Files of 'libpng'.
+libpng/bin
+libpng/include
+libpng/lib
+
+# Files of 'stb'.
+stb
+
+# Files of 'zlib'.
+zlib/bin
+zlib/include
+zlib/lib
